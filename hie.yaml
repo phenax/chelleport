@@ -1,0 +1,10 @@
+cradle:
+  cabal:
+    - path: "./src"
+      component: "lib:lib-chelleport"
+
+    - path: "./bin/Main.hs"
+      component: "exe:chelleport"
+
+    - path: "./specs"
+      component: "test:specs"
