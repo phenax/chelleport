@@ -40,8 +40,8 @@ library lib-chelleport
   import: common-config, warnings
   hs-source-dirs: src
   build-depends:
-    gloss == 1.13.2.2,
-    sdl2 == 2.5.5.0
+    sdl2 == 2.5.5.0,
+    sdl2-ttf == 2.1.3
   exposed-modules:
     Chelleport
 
