@@ -2,11 +2,12 @@ module Chelleport where
 
 import Chelleport.AppShell (Action (AppAction, SysQuit), DrawContext (ctxWindow), setupAppShell)
 import Chelleport.Draw (colorLightGray, colorWhite, renderText)
-import Chelleport.KeySequence (eventToKeycode, generateKeyCells, isValidKey, nextChars, toKeyChar)
+import Chelleport.KeySequence (eventToKeycode, findMatchPosition, generateKeyCells, isValidKey, nextChars, toKeyChar)
 import Control.Monad (forM_, unless, void)
 import Data.IORef (modifyIORef', newIORef, readIORef)
 import Data.List (isPrefixOf)
 import qualified Data.Text as Text
+import Foreign.C (CInt (CInt))
 import qualified SDL
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -19,12 +20,6 @@ data AppAction = FilterSequence SDL.Keycode | SetupGrid
 
 open :: IO ()
 open = setupAppShell initialState update eventToAction render
-
-padded :: Int -> a -> [a] -> [a]
-padded 0 _ ls = ls
-padded n x ls
-  | length ls > n = ls
-  | otherwise = padded (n - 1) x (ls ++ [x])
 
 initialState :: DrawContext -> IO State
 initialState _ctx = do
@@ -64,11 +59,22 @@ render state ctx = do
 
 update :: State -> DrawContext -> AppAction -> IO State
 update state _ctx SetupGrid = pure state
-update state _ctx (FilterSequence key) =
+update state ctx (FilterSequence key) =
   case validChars >>= (\chars -> (,chars) <$> toKeyChar key) of
     Just (keyChar, validChars')
-      | keyChar `elem` validChars' ->
-          pure state {stateKeySequence = stateKeySequence state ++ [keyChar]}
+      | keyChar `elem` validChars' -> do
+          (SDL.V2 width height) <- SDL.get $ SDL.windowSize $ ctxWindow ctx :: IO (SDL.V2 CInt)
+          let newKeySequence = stateKeySequence state ++ [keyChar]
+          let rows = stateCells state
+          let wcell = width `div` unsafeCoerce (length $ head rows)
+          let hcell = height `div` unsafeCoerce (length rows)
+          case findMatchPosition newKeySequence rows of
+            Just (row, col) -> do
+              let x = wcell * unsafeCoerce col
+              let y = hcell * unsafeCoerce row
+              SDL.warpMouse SDL.WarpGlobal (SDL.P $ SDL.V2 x y)
+            Nothing -> pure ()
+          pure state {stateKeySequence = newKeySequence}
     _ -> pure state
   where
     validChars = nextChars (stateKeySequence state) (stateCells state)

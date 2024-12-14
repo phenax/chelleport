@@ -1,6 +1,6 @@
 module Specs.KeySequenceSpec where
 
-import Chelleport.KeySequence (generateKeyCells, nextChars)
+import Chelleport.KeySequence (findMatchPosition, generateKeyCells, nextChars)
 import Test.Hspec
 
 test = do
@@ -37,3 +37,18 @@ test = do
                        ["HJA", "HJB", "LJA", "LJB"],
                        ["HJA", "HJB", "LJA", "LJB"]
                      ]
+
+  describe "#findMatchPosition" $ do
+    it "returns the position of the matching key sequence" $ do
+      findMatchPosition "ABD" [["XYZ", "ABC"], ["AMK", "BBL", "ABD"]]
+        `shouldBe` Just (1, 2)
+
+    context "when sequence is incomplete" $ do
+      it "returns nothing" $ do
+        findMatchPosition "AB" [["XYZ", "ABC"], ["AMK", "BBL", "ABD"]]
+          `shouldBe` Nothing
+
+    context "when there are no matches" $ do
+      it "returns nothing" $ do
+        findMatchPosition "FOO" [["XYZ", "ABC"], ["AMK", "BBL", "ABD"]]
+          `shouldBe` Nothing

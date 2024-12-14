@@ -2,7 +2,14 @@ module Chelleport.KeySequence where
 
 import Data.List (isPrefixOf, nub)
 import qualified Data.Map as Map
+import Data.Maybe (isJust)
 import qualified SDL
+
+-- padded :: Int -> a -> [a] -> [a]
+-- padded 0 _ ls = ls
+-- padded n x ls
+--   | length ls > n = ls
+--   | otherwise = padded (n - 1) x (ls ++ [x])
 
 safeHead :: a -> [a] -> a
 safeHead def [] = def
@@ -16,6 +23,19 @@ nextChars keys cells =
   where
     matches = concatMap (filter (isPrefixOf keys)) cells
     result = concatMap (take 1 . drop (length keys)) matches
+
+findMatchPosition :: [Char] -> [[[Char]]] -> Maybe (Int, Int)
+findMatchPosition keys = findWithIndex findMatch 0
+  where
+    findMatch row =
+      fst <$> findWithIndex (\c -> if c == keys then Just () else Nothing) 0 row
+
+    findWithIndex :: (x -> Maybe r) -> Int -> [x] -> Maybe (Int, r)
+    findWithIndex _pred _index [] = Nothing
+    findWithIndex predicate index (x : ls) =
+      case predicate x of
+        Just item -> Just (index, item)
+        Nothing -> findWithIndex predicate (index + 1) ls
 
 isValidKey :: SDL.Keycode -> Bool
 isValidKey key = Map.member key keycodeMapping
