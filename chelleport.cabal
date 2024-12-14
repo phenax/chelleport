@@ -41,12 +41,16 @@ library lib-chelleport
   hs-source-dirs: src
   build-depends:
     sdl2 == 2.5.5.0,
-    sdl2-ttf == 2.1.3
+    sdl2-ttf == 2.1.3,
+    X11 == 1.10.3,
+    xtest == 0.2
   exposed-modules:
     Chelleport
     Chelleport.AppShell
     Chelleport.Draw
     Chelleport.KeySequence
+    Chelleport.Context
+    Chelleport.Control
 
 test-suite specs
   import: common-config

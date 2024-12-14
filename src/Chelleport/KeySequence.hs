@@ -2,8 +2,13 @@ module Chelleport.KeySequence where
 
 import Data.List (isPrefixOf, nub)
 import qualified Data.Map as Map
-import Data.Maybe (isJust)
 import qualified SDL
+
+type Cell = [Char]
+
+type KeySequence = [Char]
+
+type KeyGrid = [[Cell]]
 
 -- padded :: Int -> a -> [a] -> [a]
 -- padded 0 _ ls = ls
@@ -11,11 +16,11 @@ import qualified SDL
 --   | length ls > n = ls
 --   | otherwise = padded (n - 1) x (ls ++ [x])
 
-safeHead :: a -> [a] -> a
-safeHead def [] = def
-safeHead _ (x : _) = x
+-- safeHead :: a -> [a] -> a
+-- safeHead def [] = def
+-- safeHead _ (x : _) = x
 
-nextChars :: [Char] -> [[[Char]]] -> Maybe [Char]
+nextChars :: KeySequence -> KeyGrid -> Maybe [Char]
 nextChars keys cells =
   case matches of
     [] -> Nothing
@@ -24,23 +29,23 @@ nextChars keys cells =
     matches = concatMap (filter (isPrefixOf keys)) cells
     result = concatMap (take 1 . drop (length keys)) matches
 
-findMatchPosition :: [Char] -> [[[Char]]] -> Maybe (Int, Int)
+findWithIndex :: (x -> Maybe r) -> Int -> [x] -> Maybe (Int, r)
+findWithIndex _pred _index [] = Nothing
+findWithIndex predicate index (x : ls) =
+  case predicate x of
+    Just item -> Just (index, item)
+    Nothing -> findWithIndex predicate (index + 1) ls
+
+findMatchPosition :: KeySequence -> KeyGrid -> Maybe (Int, Int)
 findMatchPosition keys = findWithIndex findMatch 0
   where
-    findMatch row =
-      fst <$> findWithIndex (\c -> if c == keys then Just () else Nothing) 0 row
-
-    findWithIndex :: (x -> Maybe r) -> Int -> [x] -> Maybe (Int, r)
-    findWithIndex _pred _index [] = Nothing
-    findWithIndex predicate index (x : ls) =
-      case predicate x of
-        Just item -> Just (index, item)
-        Nothing -> findWithIndex predicate (index + 1) ls
+    findMatch =
+      fmap fst . findWithIndex (\c -> if c == keys then Just () else Nothing) 0
 
 isValidKey :: SDL.Keycode -> Bool
 isValidKey key = Map.member key keycodeMapping
 
-generateKeyCells :: (Int, Int) -> [Char] -> [[[Char]]]
+generateKeyCells :: (Int, Int) -> KeySequence -> KeyGrid
 generateKeyCells (rows, columns) hintKeys =
   (\row -> getCellSeq row <$> [1 .. columns]) <$> [1 .. rows]
   where

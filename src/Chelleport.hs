@@ -1,22 +1,25 @@
 module Chelleport where
 
-import Chelleport.AppShell (Action (AppAction, SysQuit), DrawContext (ctxWindow), setupAppShell)
+import Chelleport.AppShell (Action (AppAction, SysQuit), setupAppShell)
+import Chelleport.Context (DrawContext (ctxRenderer, ctxWindow))
+import Chelleport.Control (moveMouse, triggerMouseLeftClick)
 import Chelleport.Draw (colorLightGray, colorWhite, renderText)
-import Chelleport.KeySequence (eventToKeycode, findMatchPosition, generateKeyCells, isValidKey, nextChars, toKeyChar)
+import Chelleport.KeySequence (Cell, KeyGrid, KeySequence, eventToKeycode, findMatchPosition, generateKeyCells, isValidKey, nextChars, toKeyChar)
 import Control.Monad (forM_, unless, void)
 import Data.IORef (modifyIORef', newIORef, readIORef)
 import Data.List (isPrefixOf)
 import qualified Data.Text as Text
 import Foreign.C (CInt)
+import SDL (($=))
 import qualified SDL
 import Unsafe.Coerce (unsafeCoerce)
 
 data State = State
-  { stateCells :: [[[Char]]],
-    stateKeySequence :: [Char]
+  { stateCells :: KeyGrid,
+    stateKeySequence :: KeySequence
   }
 
-data AppAction = FilterSequence SDL.Keycode | SetupGrid
+data AppAction = FilterSequence SDL.Keycode | TriggerLeftClick | SetupGrid
 
 open :: IO ()
 open = setupAppShell initialState update eventToAction render
@@ -30,24 +33,22 @@ initialState _ctx = do
     columns = 16
     hintKeys = "ABCDEFGHIJKLMNOPRSTUVWXYZ1234567890"
 
-renderKeySequence :: DrawContext -> [Char] -> [Char] -> (CInt, CInt) -> (CInt, CInt) -> IO ()
-renderKeySequence ctx keySequence cell (px, py) (wcell, hcell) = do
-  let w = px * wcell
-  let h = py * hcell
+renderKeySequence :: DrawContext -> KeySequence -> Cell -> (CInt, CInt) -> IO ()
+renderKeySequence ctx keySequence cell (px, py) = do
   let (matched, remaining) =
         if keySequence `isPrefixOf` cell
           then splitAt (length keySequence) cell
           else ("", cell)
+
   widthRef <- newIORef 0
   unless (null matched) $ do
-    let pos = w
-    (textWidth, _h) <- renderText ctx (SDL.V2 pos h) colorLightGray $ Text.pack matched
+    (textWidth, _h) <- renderText ctx (SDL.V2 px py) colorLightGray $ Text.pack matched
     modifyIORef' widthRef (const textWidth)
 
   unless (null remaining) $ do
     prevTextWidth <- readIORef widthRef
-    let pos = w + prevTextWidth
-    void $ renderText ctx (SDL.V2 pos h) colorWhite $ Text.pack remaining
+    let pos = px + prevTextWidth
+    void $ renderText ctx (SDL.V2 pos py) colorWhite $ Text.pack remaining
 
 render :: State -> DrawContext -> IO ()
 render state ctx = do
@@ -55,12 +56,24 @@ render state ctx = do
   let rows = stateCells state
   let wcell = width `div` unsafeCoerce (length $ head rows)
   let hcell = height `div` unsafeCoerce (length rows)
+
+  SDL.rendererDrawColor (ctxRenderer ctx) $= SDL.V4 255 0 0 255
+  SDL.drawLine (ctxRenderer ctx) (SDL.P $ SDL.V2 (width `div` 2) 0) (SDL.P $ SDL.V2 (width `div` 2) height)
+  SDL.drawLine (ctxRenderer ctx) (SDL.P $ SDL.V2 0 (height `div` 2)) (SDL.P $ SDL.V2 width (height `div` 2))
+
+  SDL.rendererDrawColor (ctxRenderer ctx) $= SDL.V4 100 0 0 200
   forM_ (zip [0 ..] rows) $ \(rowIndex, row) -> do
+    let py = rowIndex * hcell
+    SDL.drawLine (ctxRenderer ctx) (SDL.P $ SDL.V2 0 py) (SDL.P $ SDL.V2 width py)
+
     forM_ (zip [0 ..] row) $ \(colIndex, cell) -> do
-      renderKeySequence ctx (stateKeySequence state) cell (colIndex, rowIndex) (wcell, hcell)
+      let px = colIndex * wcell
+      SDL.drawLine (ctxRenderer ctx) (SDL.P $ SDL.V2 px 0) (SDL.P $ SDL.V2 px height)
+      renderKeySequence ctx (stateKeySequence state) cell (px, py)
 
 update :: State -> DrawContext -> AppAction -> IO State
 update state _ctx SetupGrid = pure state
+update state ctx TriggerLeftClick = state <$ triggerMouseLeftClick ctx
 update state ctx (FilterSequence key) =
   case validChars >>= (\chars -> (,chars) <$> toKeyChar key) of
     Just (keyChar, validChars')
@@ -74,7 +87,7 @@ update state ctx (FilterSequence key) =
             Just (row, col) -> do
               let x = wcell * unsafeCoerce col
               let y = hcell * unsafeCoerce row
-              SDL.warpMouse SDL.WarpGlobal (SDL.P $ SDL.V2 x y)
+              moveMouse x y
             Nothing -> pure ()
           pure state {stateKeySequence = newKeySequence}
     _ -> pure state
@@ -89,6 +102,7 @@ eventToAction _state event =
     SDL.KeyboardEvent ev
       | isKeyPressWith ev SDL.KeycodeQ -> Just SysQuit
       | isKeyPressWith ev SDL.KeycodeEscape -> Just SysQuit
+      | isKeyPressWith ev SDL.KeycodeSpace -> Just $ AppAction TriggerLeftClick
       | isKeyPress ev && isValidKey (eventToKeycode ev) ->
           Just $ AppAction $ FilterSequence $ eventToKeycode ev
     _ -> Nothing

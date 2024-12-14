@@ -5,13 +5,14 @@ import Test.Hspec
 
 test = do
   describe "#nextChars" $ do
-    it "filters key sequence and returns next characters" $ do
-      nextChars "AB" [["XYZ", "ABC"], ["AMK", "BBL", "ABD"]]
-        `shouldBe` Just "CD"
-      nextChars "A" [["XYZ", "ABC"], ["AMK", "BBL", "ABD"]]
-        `shouldBe` Just "BM"
+    context "when there is a partial match" $ do
+      it "filters key sequence and returns next characters" $ do
+        nextChars "AB" [["XYZ", "ABC"], ["AMK", "BBL", "ABD"]]
+          `shouldBe` Just "CD"
+        nextChars "A" [["XYZ", "ABC"], ["AMK", "BBL", "ABD"]]
+          `shouldBe` Just "BM"
 
-    context "when exact match is present" $ do
+    context "when there is an exact match" $ do
       it "returns next characters" $ do
         nextChars "ABD" [["XYZ", "ABC"], ["AMK", "BBL", "ABD"]]
           `shouldBe` Just ""

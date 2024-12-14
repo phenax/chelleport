@@ -1,6 +1,6 @@
 module Chelleport.Draw where
 
-import Chelleport.AppShell (DrawContext (ctxFont, ctxRenderer))
+import Chelleport.Context (DrawContext (ctxFont, ctxRenderer))
 import Data.Text (Text)
 import Data.Word (Word8)
 import Foreign.C (CInt)
