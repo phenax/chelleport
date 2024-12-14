@@ -1,8 +1,8 @@
 module Main (main) where
 
-import qualified Specs.ParserSpec
+import qualified Specs.KeySequenceSpec
 import Test.Hspec (hspec)
 
 main :: IO ()
 main = hspec $ do
-  Specs.ParserSpec.test
+  Specs.KeySequenceSpec.test

@@ -46,6 +46,7 @@ library lib-chelleport
     Chelleport
     Chelleport.AppShell
     Chelleport.Draw
+    Chelleport.KeySequence
 
 test-suite specs
   import: common-config
@@ -53,9 +54,7 @@ test-suite specs
   hs-source-dirs: specs
   main-is: Main.hs
   other-modules:
-    Specs.ParserSpec,
-    Specs.SerializerSpec,
-    Specs.TransformerSpec
+    Specs.KeySequenceSpec
   build-depends:
     lib-chelleport,
     neat-interpolation,

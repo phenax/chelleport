@@ -17,9 +17,18 @@ data DrawContext = DrawContext
 
 createContext :: IO DrawContext
 createContext = do
+  -- bounds <- fmap SDL.displayBoundsSize <$> SDL.getDisplays
+  -- let windowSize = case bounds of
+  --       (x : _) -> x
+  --       _ -> SDL.V2 800 600
+  let windowSize = SDL.V2 0 0
+
   let windowCfg =
-        SDL.defaultWindow -- SDL.windowMode = SDL.Fullscreen,
+        SDL.defaultWindow
           { SDL.windowInputGrabbed = True,
+            SDL.windowMode = SDL.FullscreenDesktop,
+            SDL.windowPosition = SDL.Absolute $ SDL.P $ SDL.V2 0 0,
+            SDL.windowInitialSize = windowSize,
             SDL.windowBorder = False
           }
   window <- SDL.createWindow "My SDL Application" windowCfg
@@ -33,7 +42,7 @@ createContext = do
   pure $ DrawContext {ctxWindow = window, ctxRenderer = renderer, ctxFont = font}
 
 setupAppShell ::
-  state ->
+  (DrawContext -> IO state) ->
   (state -> DrawContext -> appAction -> IO state) ->
   (state -> SDL.Event -> Maybe (Action appAction)) ->
   (state -> DrawContext -> IO ()) ->
@@ -44,7 +53,8 @@ setupAppShell initState update eventHandler draw = do
   TTF.initialize
 
   ctx <- createContext
-  appLoop ctx (initState, SysState {sysExit = False})
+  state <- initState ctx
+  appLoop ctx (state, SysState {sysExit = False})
 
   SDL.destroyRenderer $ ctxRenderer ctx
   SDL.destroyWindow $ ctxWindow ctx
