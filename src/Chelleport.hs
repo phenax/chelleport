@@ -7,7 +7,7 @@ import Control.Monad (forM_, unless, void)
 import Data.IORef (modifyIORef', newIORef, readIORef)
 import Data.List (isPrefixOf)
 import qualified Data.Text as Text
-import Foreign.C (CInt (CInt))
+import Foreign.C (CInt)
 import qualified SDL
 import Unsafe.Coerce (unsafeCoerce)
 
@@ -30,32 +30,34 @@ initialState _ctx = do
     columns = 16
     hintKeys = "ABCDEFGHIJKLMNOPRSTUVWXYZ1234567890"
 
+renderKeySequence :: DrawContext -> [Char] -> [Char] -> (CInt, CInt) -> (CInt, CInt) -> IO ()
+renderKeySequence ctx keySequence cell (px, py) (wcell, hcell) = do
+  let w = px * wcell
+  let h = py * hcell
+  let (matched, remaining) =
+        if keySequence `isPrefixOf` cell
+          then splitAt (length keySequence) cell
+          else ("", cell)
+  widthRef <- newIORef 0
+  unless (null matched) $ do
+    let pos = w
+    (textWidth, _h) <- renderText ctx (SDL.V2 pos h) colorLightGray $ Text.pack matched
+    modifyIORef' widthRef (const textWidth)
+
+  unless (null remaining) $ do
+    prevTextWidth <- readIORef widthRef
+    let pos = w + prevTextWidth
+    void $ renderText ctx (SDL.V2 pos h) colorWhite $ Text.pack remaining
+
 render :: State -> DrawContext -> IO ()
 render state ctx = do
   (SDL.V2 width height) <- SDL.get $ SDL.windowSize $ ctxWindow ctx
   let rows = stateCells state
   let wcell = width `div` unsafeCoerce (length $ head rows)
   let hcell = height `div` unsafeCoerce (length rows)
-
   forM_ (zip [0 ..] rows) $ \(rowIndex, row) -> do
     forM_ (zip [0 ..] row) $ \(colIndex, cell) -> do
-      let w = colIndex * wcell
-      let h = rowIndex * hcell
-      let keySequence = stateKeySequence state
-      let (matched, remaining) =
-            if keySequence `isPrefixOf` cell
-              then splitAt (length keySequence) cell
-              else ("", cell)
-
-      widthRef <- newIORef 0
-      unless (null matched) $ do
-        let pos = w
-        (textWidth, _h) <- renderText ctx (SDL.V2 pos h) colorLightGray $ Text.pack matched
-        modifyIORef' widthRef (const textWidth)
-      unless (null remaining) $ do
-        prevTextWidth <- readIORef widthRef
-        let pos = w + prevTextWidth
-        void $ renderText ctx (SDL.V2 pos h) colorWhite $ Text.pack remaining
+      renderKeySequence ctx (stateKeySequence state) cell (colIndex, rowIndex) (wcell, hcell)
 
 update :: State -> DrawContext -> AppAction -> IO State
 update state _ctx SetupGrid = pure state
