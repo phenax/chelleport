@@ -15,7 +15,7 @@ data State = State
     stateKeySequence :: KeySequence
   }
 
-data AppAction = FilterSequence SDL.Keycode | TriggerLeftClick | SetupGrid
+data AppAction = FilterSequence SDL.Keycode | TriggerLeftClick | ResetKeys
 
 data DrawContext = DrawContext
   { ctxWindow :: SDL.Window,

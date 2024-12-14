@@ -11,6 +11,9 @@ import SDL (($=))
 import qualified SDL
 import Unsafe.Coerce (unsafeCoerce)
 
+isEmpty :: [a] -> Bool
+isEmpty = null
+
 render :: State -> DrawContext -> IO ()
 render state ctx = do
   renderGridLines state ctx
@@ -33,16 +36,16 @@ renderKeySequence ctx keySequence cell (px, py) = do
         | otherwise = ("", cell)
 
   let textColor
-        | null keySequence = colorWhite
-        | not (null matched) = colorAccent
+        | isEmpty keySequence = colorWhite
+        | not $ isEmpty matched = colorAccent
         | otherwise = colorGray
 
   widthRef <- newIORef 0
-  unless (null matched) $ do
+  unless (isEmpty matched) $ do
     (textWidth, _h) <- drawText ctx (SDL.V2 px py) colorLightGray $ Text.pack matched
     modifyIORef' widthRef (const textWidth)
 
-  unless (null remaining) $ do
+  unless (isEmpty remaining) $ do
     prevTextWidth <- readIORef widthRef
     let pos = px + prevTextWidth
     void $ drawText ctx (SDL.V2 pos py) textColor $ Text.pack remaining

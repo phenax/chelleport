@@ -1,6 +1,6 @@
 module Chelleport.AppShell where
 
-import Chelleport.Context (createContext)
+import Chelleport.Context (initializeContext)
 import Chelleport.Draw (colorBackground)
 import Chelleport.Types
 import Control.Monad (foldM, unless)
@@ -25,7 +25,7 @@ setupAppShell initState update eventHandler draw = do
   SDL.initializeAll
   TTF.initialize
 
-  ctx <- createContext
+  ctx <- initializeContext
   state <- initState ctx
   appLoop ctx (state, SysState {sysExit = False})
 

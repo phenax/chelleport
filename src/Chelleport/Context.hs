@@ -6,8 +6,8 @@ import SDL (($=))
 import qualified SDL
 import qualified SDL.Font as TTF
 
-createContext :: IO DrawContext
-createContext = do
+initializeContext :: IO DrawContext
+initializeContext = do
   let windowCfg =
         SDL.defaultWindow
           { SDL.windowMode = SDL.FullscreenDesktop,
