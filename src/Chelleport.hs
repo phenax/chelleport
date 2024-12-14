@@ -3,7 +3,7 @@ module Chelleport where
 import Chelleport.AppShell (Action (AppAction, SysQuit), hideWindow, setupAppShell, shutdownApp)
 import Chelleport.Context (DrawContext (ctxRenderer, ctxWindow))
 import Chelleport.Control (moveMouse, triggerMouseLeftClick)
-import Chelleport.Draw (colorLightGray, colorWhite, renderText)
+import Chelleport.Draw (colorAxisLines, colorGridLines, colorLightGray, colorWhite, drawHorizontalLine, drawVerticalLine, renderText)
 import Chelleport.KeySequence (Cell, KeyGrid, KeySequence, eventToKeycode, findMatchPosition, generateKeyCells, isValidKey, nextChars, toKeyChar)
 import Control.Monad (forM_, unless, void)
 import Data.IORef (modifyIORef', newIORef, readIORef)
@@ -33,6 +33,21 @@ initialState _ctx = do
     columns = 16
     hintKeys = "ABCDEFGHIJKLMNOPRSTUVWXYZ1234567890"
 
+render :: State -> DrawContext -> IO ()
+render state ctx = do
+  (SDL.V2 width height) <- SDL.get $ SDL.windowSize $ ctxWindow ctx
+  let grid = stateCells state
+  let wcell = width `div` unsafeCoerce (length $ head grid)
+  let hcell = height `div` unsafeCoerce (length grid)
+
+  renderGridLines state ctx
+
+  forM_ (zip [0 ..] grid) $ \(rowIndex, row) -> do
+    let py = rowIndex * hcell
+    forM_ (zip [0 ..] row) $ \(colIndex, cell) -> do
+      let px = colIndex * wcell
+      renderKeySequence ctx (stateKeySequence state) cell (px, py)
+
 renderKeySequence :: DrawContext -> KeySequence -> Cell -> (CInt, CInt) -> IO ()
 renderKeySequence ctx keySequence cell (px, py) = do
   let (matched, remaining) =
@@ -50,26 +65,24 @@ renderKeySequence ctx keySequence cell (px, py) = do
     let pos = px + prevTextWidth
     void $ renderText ctx (SDL.V2 pos py) colorWhite $ Text.pack remaining
 
-render :: State -> DrawContext -> IO ()
-render state ctx = do
+renderGridLines :: State -> DrawContext -> IO ()
+renderGridLines state ctx = do
   (SDL.V2 width height) <- SDL.get $ SDL.windowSize $ ctxWindow ctx
-  let rows = stateCells state
-  let wcell = width `div` unsafeCoerce (length $ head rows)
-  let hcell = height `div` unsafeCoerce (length rows)
+  let grid = stateCells state
+  let wcell = width `div` unsafeCoerce (length $ head grid)
+  let hcell = height `div` unsafeCoerce (length grid)
 
-  SDL.rendererDrawColor (ctxRenderer ctx) $= SDL.V4 255 0 0 255
-  SDL.drawLine (ctxRenderer ctx) (SDL.P $ SDL.V2 (width `div` 2) 0) (SDL.P $ SDL.V2 (width `div` 2) height)
-  SDL.drawLine (ctxRenderer ctx) (SDL.P $ SDL.V2 0 (height `div` 2)) (SDL.P $ SDL.V2 width (height `div` 2))
+  SDL.rendererDrawColor (ctxRenderer ctx) $= colorGridLines
+  let rows = unsafeCoerce $ length grid
+  let columns = unsafeCoerce $ length $ head grid
+  forM_ [0 .. rows] $ \rowIndex -> do
+    drawHorizontalLine ctx $ rowIndex * hcell
+  forM_ [0 .. columns] $ \colIndex -> do
+    drawVerticalLine ctx $ colIndex * wcell
 
-  SDL.rendererDrawColor (ctxRenderer ctx) $= SDL.V4 100 0 0 200
-  forM_ (zip [0 ..] rows) $ \(rowIndex, row) -> do
-    let py = rowIndex * hcell
-    SDL.drawLine (ctxRenderer ctx) (SDL.P $ SDL.V2 0 py) (SDL.P $ SDL.V2 width py)
-
-    forM_ (zip [0 ..] row) $ \(colIndex, cell) -> do
-      let px = colIndex * wcell
-      SDL.drawLine (ctxRenderer ctx) (SDL.P $ SDL.V2 px 0) (SDL.P $ SDL.V2 px height)
-      renderKeySequence ctx (stateKeySequence state) cell (px, py)
+  SDL.rendererDrawColor (ctxRenderer ctx) $= colorAxisLines
+  drawHorizontalLine ctx (rows * hcell `div` 2)
+  drawVerticalLine ctx (columns * wcell `div` 2)
 
 update :: State -> DrawContext -> AppAction -> IO State
 update state _ctx SetupGrid = pure state
@@ -82,7 +95,7 @@ update state ctx (FilterSequence key) =
   case validChars >>= (\chars -> (,chars) <$> toKeyChar key) of
     Just (keyChar, validChars')
       | keyChar `elem` validChars' -> do
-          (SDL.V2 width height) <- SDL.get $ SDL.windowSize $ ctxWindow ctx :: IO (SDL.V2 CInt)
+          (SDL.V2 width height) <- SDL.get $ SDL.windowSize $ ctxWindow ctx
           let newKeySequence = stateKeySequence state ++ [keyChar]
           let rows = stateCells state
           let wcell = width `div` unsafeCoerce (length $ head rows)

@@ -1,6 +1,7 @@
 module Chelleport.AppShell where
 
 import Chelleport.Context (DrawContext (ctxRenderer, ctxWindow, ctxX11Display), createContext)
+import Chelleport.Draw (colorBackground)
 import Control.Monad (foldM, unless)
 import qualified Graphics.X11 as X11
 import SDL (($=))
@@ -32,7 +33,7 @@ setupAppShell initState update eventHandler draw = do
     appLoop drawCtx (state, sysState) = do
       events <- SDL.pollEvents
 
-      SDL.rendererDrawColor (ctxRenderer drawCtx) $= SDL.V4 0 0 0 0
+      SDL.rendererDrawColor (ctxRenderer drawCtx) $= colorBackground
       SDL.clear $ ctxRenderer drawCtx
       draw state drawCtx
       SDL.present $ ctxRenderer drawCtx

@@ -1,6 +1,6 @@
 module Chelleport.Draw where
 
-import Chelleport.Context (DrawContext (ctxFont, ctxRenderer))
+import Chelleport.Context (DrawContext (ctxFont, ctxRenderer, ctxWindow))
 import Data.Text (Text)
 import Data.Word (Word8)
 import Foreign.C (CInt)
@@ -12,6 +12,15 @@ colorWhite = SDL.V4 255 255 255 255
 
 colorLightGray :: SDL.V4 Word8
 colorLightGray = SDL.V4 100 100 100 255
+
+colorGridLines :: SDL.V4 Word8
+colorGridLines = SDL.V4 127 29 29 150
+
+colorAxisLines :: SDL.V4 Word8
+colorAxisLines = SDL.V4 239 68 68 255
+
+colorBackground :: SDL.V4 Word8
+colorBackground = SDL.V4 15 12 25 0
 
 renderText :: DrawContext -> SDL.V2 CInt -> SDL.V4 Word8 -> Text -> IO (CInt, CInt)
 renderText ctx position color text = do
@@ -30,3 +39,13 @@ renderText ctx position color text = do
   SDL.destroyTexture texture
 
   pure (textWidth, textHeight)
+
+drawHorizontalLine :: DrawContext -> CInt -> IO ()
+drawHorizontalLine ctx x = do
+  (SDL.V2 width _height) <- SDL.get $ SDL.windowSize $ ctxWindow ctx
+  SDL.drawLine (ctxRenderer ctx) (SDL.P $ SDL.V2 0 x) (SDL.P $ SDL.V2 width x)
+
+drawVerticalLine :: DrawContext -> CInt -> IO ()
+drawVerticalLine ctx x = do
+  (SDL.V2 _width height) <- SDL.get $ SDL.windowSize $ ctxWindow ctx
+  SDL.drawLine (ctxRenderer ctx) (SDL.P $ SDL.V2 x 0) (SDL.P $ SDL.V2 x height)
