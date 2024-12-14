@@ -1,24 +1,9 @@
 module Chelleport.KeySequence where
 
+import Chelleport.Types (KeyGrid, KeySequence)
 import Data.List (isPrefixOf, nub)
 import qualified Data.Map as Map
 import qualified SDL
-
-type Cell = [Char]
-
-type KeySequence = [Char]
-
-type KeyGrid = [[Cell]]
-
--- padded :: Int -> a -> [a] -> [a]
--- padded 0 _ ls = ls
--- padded n x ls
---   | length ls > n = ls
---   | otherwise = padded (n - 1) x (ls ++ [x])
-
--- safeHead :: a -> [a] -> a
--- safeHead def [] = def
--- safeHead _ (x : _) = x
 
 nextChars :: KeySequence -> KeyGrid -> Maybe [Char]
 nextChars keys cells =

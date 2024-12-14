@@ -48,10 +48,12 @@ library lib-chelleport
   exposed-modules:
     Chelleport
     Chelleport.AppShell
-    Chelleport.Draw
-    Chelleport.KeySequence
     Chelleport.Context
     Chelleport.Control
+    Chelleport.Draw
+    Chelleport.KeySequence
+    Chelleport.Types
+    Chelleport.View
 
 test-suite specs
   import: common-config

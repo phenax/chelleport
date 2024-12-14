@@ -1,6 +1,6 @@
 module Chelleport.Draw where
 
-import Chelleport.Context (DrawContext (ctxFont, ctxRenderer, ctxWindow))
+import Chelleport.Types
 import Data.Text (Text)
 import Data.Word (Word8)
 import Foreign.C (CInt)
@@ -13,6 +13,12 @@ colorWhite = SDL.V4 255 255 255 255
 colorLightGray :: SDL.V4 Word8
 colorLightGray = SDL.V4 100 100 100 255
 
+colorGray :: SDL.V4 Word8
+colorGray = SDL.V4 55 52 65 200
+
+colorAccent :: SDL.V4 Word8
+colorAccent = SDL.V4 110 112 247 255
+
 colorGridLines :: SDL.V4 Word8
 colorGridLines = SDL.V4 127 29 29 150
 
@@ -22,8 +28,8 @@ colorAxisLines = SDL.V4 239 68 68 255
 colorBackground :: SDL.V4 Word8
 colorBackground = SDL.V4 15 12 25 0
 
-renderText :: DrawContext -> SDL.V2 CInt -> SDL.V4 Word8 -> Text -> IO (CInt, CInt)
-renderText ctx position color text = do
+drawText :: DrawContext -> SDL.V2 CInt -> SDL.V4 Word8 -> Text -> IO (CInt, CInt)
+drawText ctx position color text = do
   surface <- TTF.blended (ctxFont ctx) color text
   texture <- SDL.createTextureFromSurface (ctxRenderer ctx) surface
   SDL.freeSurface surface

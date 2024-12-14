@@ -1,7 +1,8 @@
 module Chelleport.AppShell where
 
-import Chelleport.Context (DrawContext (ctxRenderer, ctxWindow, ctxX11Display), createContext)
+import Chelleport.Context (createContext)
 import Chelleport.Draw (colorBackground)
+import Chelleport.Types
 import Control.Monad (foldM, unless)
 import qualified Graphics.X11 as X11
 import SDL (($=))

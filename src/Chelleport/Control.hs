@@ -1,6 +1,6 @@
 module Chelleport.Control where
 
-import Chelleport.Context (DrawContext (ctxX11Display))
+import Chelleport.Types
 import Control.Concurrent (threadDelay)
 import Foreign.C (CInt)
 import qualified Graphics.X11 as X11
@@ -18,3 +18,11 @@ triggerMouseLeftClick ctx = do
 moveMouse :: DrawContext -> CInt -> CInt -> IO ()
 moveMouse _ctx x y = do
   SDL.warpMouse SDL.WarpGlobal (SDL.P $ SDL.V2 x y)
+
+isKeyPress :: SDL.KeyboardEventData -> Bool
+isKeyPress keyboardEvent =
+  SDL.keyboardEventKeyMotion keyboardEvent == SDL.Pressed
+
+isKeyPressWith :: SDL.KeyboardEventData -> SDL.Keycode -> Bool
+isKeyPressWith keyboardEvent keyCode =
+  isKeyPress keyboardEvent && SDL.keysymKeycode (SDL.keyboardEventKeysym keyboardEvent) == keyCode
