@@ -1,10 +1,12 @@
 module Chelleport.AppShell where
 
-import Chelleport.Context (DrawContext (ctxRenderer, ctxWindow), createContext)
+import Chelleport.Context (DrawContext (ctxRenderer, ctxWindow, ctxX11Display), createContext)
 import Control.Monad (foldM, unless)
+import qualified Graphics.X11 as X11
 import SDL (($=))
 import qualified SDL
 import qualified SDL.Font as TTF
+import System.Exit (exitSuccess)
 
 data Action act = SysQuit | AppAction act
 
@@ -25,8 +27,7 @@ setupAppShell initState update eventHandler draw = do
   state <- initState ctx
   appLoop ctx (state, SysState {sysExit = False})
 
-  SDL.destroyRenderer $ ctxRenderer ctx
-  SDL.destroyWindow $ ctxWindow ctx
+  shutdownApp ctx
   where
     appLoop drawCtx (state, sysState) = do
       events <- SDL.pollEvents
@@ -43,3 +44,17 @@ setupAppShell initState update eventHandler draw = do
 
     updateState _drawCtx (state, sysState) SysQuit = pure (state, sysState {sysExit = True})
     updateState drawCtx (state, sysState) (AppAction action) = (,sysState) <$> update state drawCtx action
+
+hideWindow :: DrawContext -> IO ()
+hideWindow ctx = SDL.hideWindow (ctxWindow ctx)
+
+closeWindow :: DrawContext -> IO ()
+closeWindow ctx = do
+  SDL.destroyRenderer $ ctxRenderer ctx
+  SDL.destroyWindow $ ctxWindow ctx
+
+shutdownApp :: DrawContext -> IO ()
+shutdownApp ctx = do
+  closeWindow ctx
+  X11.closeDisplay $ ctxX11Display ctx
+  exitSuccess

@@ -1,6 +1,6 @@
 module Chelleport where
 
-import Chelleport.AppShell (Action (AppAction, SysQuit), setupAppShell)
+import Chelleport.AppShell (Action (AppAction, SysQuit), hideWindow, setupAppShell, shutdownApp)
 import Chelleport.Context (DrawContext (ctxRenderer, ctxWindow))
 import Chelleport.Control (moveMouse, triggerMouseLeftClick)
 import Chelleport.Draw (colorLightGray, colorWhite, renderText)
@@ -73,7 +73,11 @@ render state ctx = do
 
 update :: State -> DrawContext -> AppAction -> IO State
 update state _ctx SetupGrid = pure state
-update state ctx TriggerLeftClick = state <$ triggerMouseLeftClick ctx
+update state ctx TriggerLeftClick = do
+  hideWindow ctx
+  triggerMouseLeftClick ctx
+  shutdownApp ctx
+  pure state
 update state ctx (FilterSequence key) =
   case validChars >>= (\chars -> (,chars) <$> toKeyChar key) of
     Just (keyChar, validChars')
@@ -85,9 +89,7 @@ update state ctx (FilterSequence key) =
           let hcell = height `div` unsafeCoerce (length rows)
           case findMatchPosition newKeySequence rows of
             Just (row, col) -> do
-              let x = wcell * unsafeCoerce col
-              let y = hcell * unsafeCoerce row
-              moveMouse x y
+              moveMouse ctx (wcell * unsafeCoerce col) (hcell * unsafeCoerce row)
             Nothing -> pure ()
           pure state {stateKeySequence = newKeySequence}
     _ -> pure state

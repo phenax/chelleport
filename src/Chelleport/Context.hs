@@ -22,13 +22,12 @@ createContext = do
 
   let windowCfg =
         SDL.defaultWindow
-          { SDL.windowInputGrabbed = True,
-            SDL.windowMode = SDL.FullscreenDesktop,
+          { SDL.windowMode = SDL.FullscreenDesktop,
             SDL.windowPosition = SDL.Absolute $ SDL.P $ SDL.V2 0 0,
             SDL.windowInitialSize = windowSize,
             SDL.windowBorder = False
           }
-  window <- SDL.createWindow "My SDL Application" windowCfg
+  window <- SDL.createWindow "Chelleport" windowCfg
   renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
   font <- TTF.load "Inter-Regular.ttf" 16
 
