@@ -24,12 +24,16 @@ generateKeyCells :: (Int, Int) -> [Char] -> [[[Char]]]
 generateKeyCells (rows, columns) hintKeys =
   (\row -> getCellSeq row <$> [1 .. columns]) <$> [1 .. rows]
   where
-    getCellSeq x y = [getPrefix1 x y, getPrefix2 x y, getKey x y]
-    getKey _row col = hintKeys !! (col `mod` (columns `div` 2))
-    getPrefix1 _row col
+    getCellSeq row col = [getPrefixHoriz row col, getPrefixVert row col, getKey row col]
+    getKey row col = hintKeys !! index
+      where
+        index = (secRow * (columns `div` 2) + secCol) `mod` length hintKeys
+        secCol = (col - 1) `mod` (columns `div` 2)
+        secRow = (row - 1) `mod` (rows `div` 2)
+    getPrefixHoriz _row col
       | col <= (columns `div` 2) = 'H'
       | otherwise = 'L'
-    getPrefix2 row _col
+    getPrefixVert row _col
       | row <= (rows `div` 2) = 'K'
       | otherwise = 'J'
 

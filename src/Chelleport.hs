@@ -6,7 +6,6 @@ import Chelleport.KeySequence (eventToKeycode, generateKeyCells, isValidKey, nex
 import Control.Monad (forM_, unless, void)
 import Data.IORef (modifyIORef', newIORef, readIORef)
 import Data.List (isPrefixOf)
-import Data.Text (splitOn)
 import qualified Data.Text as Text
 import qualified SDL
 import Unsafe.Coerce (unsafeCoerce)
@@ -34,7 +33,7 @@ initialState _ctx = do
   where
     rows = 16
     columns = 16
-    hintKeys = "ABCDEFGIMNOPRSTUVWXYZ"
+    hintKeys = "ABCDEFGHIJKLMNOPRSTUVWXYZ1234567890"
 
 render :: State -> DrawContext -> IO ()
 render state ctx = do
