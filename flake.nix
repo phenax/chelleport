@@ -11,8 +11,8 @@
         inputs.haskell-flake.flakeModule
       ];
 
-      perSystem = { self', pkgs, lib, config, ... }: {
-        haskellProjects.default = {
+      perSystem = { self', pkgs, lib, config, ... }:
+        let
           projectRoot = builtins.toString (lib.fileset.toSource {
             root = ./.;
             fileset = lib.fileset.unions [
@@ -22,30 +22,48 @@
               ./chelleport.cabal
             ];
           });
+          otherFiles = [
+            { source = ./static; target = "static"; }
+          ];
+        in {
+          haskellProjects.default = {
+            inherit projectRoot;
 
-          packages = {};
-          settings = {};
+            packages = {};
+            settings = {
+              chelleport = {
+                deadCodeElimination = true;
+                staticLibraries = true;
+                # extraBuildFlags = ["+release"];
+                strip = true;
+                custom = drv: drv.overrideAttrs(old: {
+                  preBuild = ''
+                    ${toString (map (f: ''cp -r ${f.source} ${f.target};'') otherFiles)}
+                  '';
+                });
+              };
+            };
 
-          devShell = {
-            # tools = hp: { fourmolu = hp.fourmolu; ghcid = null; };
-            hlsCheck.enable = false;
+            devShell = {
+              # tools = hp: { fourmolu = hp.fourmolu; ghcid = null; };
+              hlsCheck.enable = false;
+            };
+
+            autoWire = [ "packages" "apps" "checks" ];
           };
 
-          autoWire = [ "packages" "apps" "checks" ];
-        };
+          packages.default = self'.packages.chelleport;
+          apps.default = self'.apps.chelleport;
 
-        packages.default = self'.packages.chelleport;
-        apps.default = self'.apps.chelleport;
-
-        devShells.default = pkgs.mkShell {
-          inputsFrom = [
-            config.haskellProjects.default.outputs.devShell
-          ];
-          packages = with pkgs; [
-            just
-            nodemon
-          ];
+          devShells.default = pkgs.mkShell {
+            inputsFrom = [
+              config.haskellProjects.default.outputs.devShell
+            ];
+            packages = with pkgs; [
+              just
+              nodemon
+            ];
+          };
         };
-      };
     };
 }

@@ -1,6 +1,8 @@
-module Chelleport.Context where
+module Chelleport.Context (initializeContext) where
 
 import Chelleport.Types
+import Data.ByteString (ByteString)
+import Data.FileEmbed (embedFileRelative)
 import Foreign.C (CFloat)
 import qualified Graphics.X11 as X11
 import SDL (($=))
@@ -29,9 +31,12 @@ initializeContext = do
         ctxX11Display = display
       }
 
+rawFontData :: ByteString
+rawFontData = $(embedFileRelative "./static/font.ttf")
+
 loadFont :: IO TTF.Font
 loadFont = do
-  font <- TTF.load "Inter-Regular.ttf" fontSize
+  font <- TTF.decode rawFontData fontSize
   TTF.setStyle font [TTF.Bold]
   pure font
 

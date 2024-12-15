@@ -9,6 +9,11 @@ build-type:      Simple
 synopsis:        Mouse control
 description:     Mouse control
 
+Flag release
+  Description: Release build options
+  Manual: True
+  Default: False
+
 common common-config
   default-extensions:
     ExplicitForAll,
@@ -29,6 +34,8 @@ common warnings
     -Wall -Wincomplete-record-updates -Wincomplete-uni-patterns
     -Wunused-foralls -Wextra -Wno-unused-do-bind -Wname-shadowing
     -fwarn-tabs -fprint-explicit-foralls -fprint-explicit-kinds
+  if flag(release)
+    ghc-options: -O2 -Werror
 
 executable chelleport
   import: common-config, warnings
@@ -41,10 +48,12 @@ library lib-chelleport
   import: common-config, warnings
   hs-source-dirs: src
   build-depends:
+    bytestring,
+    file-embed == 0.0.16.0,
     sdl2 == 2.5.5.0,
     sdl2-ttf == 2.1.3,
-    X11 == 1.10.3,
     vector == 0.13.1.0,
+    X11 == 1.10.3,
     xtest == 0.2
   exposed-modules:
     Chelleport
