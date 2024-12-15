@@ -6,12 +6,12 @@ import Chelleport.Utils (intToCInt, isEmpty, isNotEmpty)
 import Control.Monad (forM_, unless, void, when)
 import Data.IORef (modifyIORef', newIORef, readIORef)
 import Data.List (isPrefixOf)
+import Data.Maybe (isJust)
 import qualified Data.Text as Text
 import qualified Data.Vector.Storable as Vector
 import Foreign.C (CInt)
 import SDL (($=))
 import qualified SDL
-import Data.Maybe (isJust)
 
 render :: State -> DrawContext -> IO ()
 render state ctx = do
@@ -66,12 +66,12 @@ renderGridLines state ctx@(DrawContext {ctxRenderer = renderer}) = do
   let rows = intToCInt $ length grid
   let columns = intToCInt $ length $ head grid
   forM_ [0 .. rows] $ \rowIndex -> do
-    SDL.rendererDrawColor renderer $= colorGray
+    SDL.rendererDrawColor renderer $= colorFocusLines
     drawHorizontalLine ctx (rowIndex * hcell + hcell `div` 2)
     SDL.rendererDrawColor renderer $= colorGridLines
     drawHorizontalLine ctx $ rowIndex * hcell
   forM_ [0 .. columns] $ \colIndex -> do
-    SDL.rendererDrawColor renderer $= colorGray
+    SDL.rendererDrawColor renderer $= colorFocusLines
     drawVerticalLine ctx (colIndex * wcell + wcell `div` 2)
     SDL.rendererDrawColor renderer $= colorGridLines
     drawVerticalLine ctx $ colIndex * wcell

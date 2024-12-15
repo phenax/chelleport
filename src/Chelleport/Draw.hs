@@ -23,7 +23,10 @@ colorHighlight :: SDL.V4 Word8
 colorHighlight = colorAccent
 
 colorGridLines :: SDL.V4 Word8
-colorGridLines = SDL.V4 127 29 29 150
+colorGridLines = colorGray -- SDL.V4 127 29 29 150
+
+colorFocusLines :: SDL.V4 Word8
+colorFocusLines = colorLightGray
 
 colorAxisLines :: SDL.V4 Word8
 colorAxisLines = colorAccent

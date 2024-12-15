@@ -26,6 +26,16 @@ currentMousePosition _ctx = do
 isKeyPress :: SDL.KeyboardEventData -> Bool
 isKeyPress = (== SDL.Pressed) . SDL.keyboardEventKeyMotion
 
+isKeyRelease :: SDL.KeyboardEventData -> Bool
+isKeyRelease = (== SDL.Released) . SDL.keyboardEventKeyMotion
+
+eventToKeycode :: SDL.KeyboardEventData -> SDL.Keycode
+eventToKeycode = SDL.keysymKeycode . SDL.keyboardEventKeysym
+
 isKeyPressWith :: SDL.KeyboardEventData -> SDL.Keycode -> Bool
 isKeyPressWith keyboardEvent keyCode =
-  isKeyPress keyboardEvent && SDL.keysymKeycode (SDL.keyboardEventKeysym keyboardEvent) == keyCode
+  isKeyPress keyboardEvent && eventToKeycode keyboardEvent == keyCode
+
+isKeyReleaseWith :: SDL.KeyboardEventData -> SDL.Keycode -> Bool
+isKeyReleaseWith keyboardEvent keyCode =
+  isKeyRelease keyboardEvent && eventToKeycode keyboardEvent == keyCode

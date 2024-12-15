@@ -53,9 +53,6 @@ generateGrid seed (rows, columns) hintKeys
 toKeyChar :: SDL.Keycode -> Maybe Char
 toKeyChar = (`Map.lookup` keycodeMapping)
 
-eventToKeycode :: SDL.KeyboardEventData -> SDL.Keycode
-eventToKeycode = SDL.keysymKeycode . SDL.keyboardEventKeysym
-
 keycodeMapping :: Map.Map SDL.Keycode Char
 keycodeMapping =
   Map.fromList
