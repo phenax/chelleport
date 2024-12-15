@@ -17,6 +17,7 @@ Flag release
 common common-config
   default-extensions:
     ExplicitForAll,
+    LambdaCase,
     OverloadedStrings,
     QuasiQuotes,
     TemplateHaskell,

@@ -1,6 +1,7 @@
 module Chelleport.Draw where
 
 import Chelleport.Types
+import Chelleport.Utils (intToCInt)
 import Data.Text (Text)
 import qualified Data.Vector.Storable as Vector
 import Data.Word (Word8)
@@ -24,7 +25,7 @@ colorHighlight :: SDL.V4 Word8
 colorHighlight = colorAccent
 
 colorGridLines :: SDL.V4 Word8
-colorGridLines = colorGray -- SDL.V4 127 29 29 150
+colorGridLines = colorGray
 
 colorFocusLines :: SDL.V4 Word8
 colorFocusLines = colorLightGray
@@ -58,6 +59,14 @@ drawText ctx@(DrawContext {ctxRenderer = renderer}) position color text = do
 
 windowSize :: DrawContext -> IO (SDL.V2 CInt)
 windowSize = SDL.get . SDL.windowSize . ctxWindow
+
+cellSize :: State -> DrawContext -> IO (CInt, CInt)
+cellSize state ctx = do
+  (SDL.V2 width height) <- windowSize ctx
+  let rows = stateGrid state
+  let wcell = width `div` intToCInt (length $ head rows)
+  let hcell = height `div` intToCInt (length rows)
+  pure (wcell, hcell)
 
 drawHorizontalLine :: DrawContext -> CInt -> IO ()
 drawHorizontalLine ctx@(DrawContext {ctxRenderer = renderer}) x = do

@@ -16,18 +16,15 @@ render :: State -> DrawContext -> IO ()
 render state ctx = do
   renderGridLines state ctx
 
-  (SDL.V2 width height) <- windowSize ctx
-  let grid = stateGrid state
-  let wcell = width `div` intToCInt (length $ head grid)
-  let hcell = height `div` intToCInt (length grid)
+  (wcell, hcell) <- cellSize state ctx
 
-  forM_ (zip [0 ..] grid) $ \(rowIndex, row) -> do
+  forM_ (zip [0 ..] $ stateGrid state) $ \(rowIndex, row) -> do
     forM_ (zip [0 ..] row) $ \(colIndex, cell) -> do
       let py = rowIndex * hcell + 10
       let px = colIndex * wcell + wcell `div` 2 - 20
       visible <- renderKeySequence ctx (stateKeySequence state) cell (px, py)
       when visible $ do
-        renderTargetPoints state ctx (rowIndex, colIndex) (wcell, hcell)
+        renderTargetPoints state ctx (rowIndex, colIndex)
 
 renderKeySequence :: DrawContext -> KeySequence -> Cell -> (CInt, CInt) -> IO Bool
 renderKeySequence ctx keySequence cell (px, py) = do
@@ -57,10 +54,8 @@ renderKeySequence ctx keySequence cell (px, py) = do
 
 renderGridLines :: State -> DrawContext -> IO ()
 renderGridLines state ctx@(DrawContext {ctxRenderer = renderer}) = do
-  (SDL.V2 width height) <- windowSize ctx
   let grid = stateGrid state
-  let wcell = width `div` intToCInt (length $ head grid)
-  let hcell = height `div` intToCInt (length grid)
+  (wcell, hcell) <- cellSize state ctx
 
   let rows = intToCInt $ length grid
   let columns = intToCInt $ length $ head grid
@@ -79,8 +74,9 @@ renderGridLines state ctx@(DrawContext {ctxRenderer = renderer}) = do
   drawHorizontalLine ctx (rows * hcell `div` 2)
   drawVerticalLine ctx (columns * wcell `div` 2)
 
-renderTargetPoints :: State -> DrawContext -> (CInt, CInt) -> (CInt, CInt) -> IO ()
-renderTargetPoints state ctx@(DrawContext {ctxRenderer = renderer}) (row, col) (wcell, hcell) = do
+renderTargetPoints :: State -> DrawContext -> (CInt, CInt) -> IO ()
+renderTargetPoints state ctx@(DrawContext {ctxRenderer = renderer}) (row, col) = do
+  (wcell, hcell) <- cellSize state ctx
   let (x, y) = (col * wcell + wcell `div` 2, row * hcell + hcell `div` 2)
   SDL.rendererDrawColor renderer $= colorWhite
   drawCircle ctx 2 (x, y)
