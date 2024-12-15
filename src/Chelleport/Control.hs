@@ -18,6 +18,11 @@ moveMouse :: DrawContext -> CInt -> CInt -> IO ()
 moveMouse _ x y = do
   SDL.warpMouse SDL.WarpGlobal (SDL.P $ SDL.V2 x y)
 
+currentMousePosition :: DrawContext -> IO (SDL.V2 CInt)
+currentMousePosition _ctx = do
+  (SDL.P p) <- SDL.getAbsoluteMouseLocation
+  pure p
+
 isKeyPress :: SDL.KeyboardEventData -> Bool
 isKeyPress = (== SDL.Pressed) . SDL.keyboardEventKeyMotion
 

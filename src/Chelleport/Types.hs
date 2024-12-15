@@ -12,7 +12,8 @@ type KeyGrid = [[Cell]]
 
 data State = State
   { stateGrid :: KeyGrid,
-    stateKeySequence :: KeySequence
+    stateKeySequence :: KeySequence,
+    stateIsMatched :: Bool
   }
 
 data AppAction
@@ -20,6 +21,7 @@ data AppAction
   | MoveMousePosition (Int, Int)
   | ResetKeys
   | TriggerLeftClick
+  | IncrementMouseCursor (Int, Int)
 
 data DrawContext = DrawContext
   { ctxWindow :: SDL.Window,
