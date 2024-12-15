@@ -8,7 +8,7 @@ import qualified SDL
 import qualified SDL.Font as TTF
 
 windowOpacity :: CFloat
-windowOpacity = 0.6
+windowOpacity = 0.5
 
 fontSize :: Int
 fontSize = 24

@@ -5,10 +5,9 @@ import Chelleport.Types
 import Chelleport.Utils (intToCInt, isEmpty, isNotEmpty)
 import Control.Monad (forM_, unless, void, when)
 import Data.IORef (modifyIORef', newIORef, readIORef)
-import Data.List (isPrefixOf)
+import Data.List (isPrefixOf, (\\))
 import Data.Maybe (isJust)
 import qualified Data.Text as Text
-import qualified Data.Vector.Storable as Vector
 import Foreign.C (CInt)
 import SDL (($=))
 import qualified SDL
@@ -28,7 +27,7 @@ render state ctx = do
       let px = colIndex * wcell + wcell `div` 2 - 20
       visible <- renderKeySequence ctx (stateKeySequence state) cell (px, py)
       when visible $ do
-        renderTargetPoint ctx (colIndex * wcell + wcell `div` 2, rowIndex * hcell + hcell `div` 2)
+        renderTargetPoints state ctx (rowIndex, colIndex) (wcell, hcell)
 
 renderKeySequence :: DrawContext -> KeySequence -> Cell -> (CInt, CInt) -> IO Bool
 renderKeySequence ctx keySequence cell (px, py) = do
@@ -80,16 +79,24 @@ renderGridLines state ctx@(DrawContext {ctxRenderer = renderer}) = do
   drawHorizontalLine ctx (rows * hcell `div` 2)
   drawVerticalLine ctx (columns * wcell `div` 2)
 
-renderTargetPoint :: DrawContext -> (CInt, CInt) -> IO ()
-renderTargetPoint (DrawContext {ctxRenderer = renderer}) (x, y) = do
-  let renderedPoints = 16
-  let radius = 2.0 :: Double
-  let toTheta n = fromIntegral n * (2 * pi) / fromIntegral renderedPoints
-      toPointOnCircle n =
-        SDL.V2
-          (x + round (radius * cos (toTheta n)))
-          (y + round (radius * sin (toTheta n)))
-  let points = Vector.generate renderedPoints (SDL.P . toPointOnCircle)
+renderTargetPoints :: State -> DrawContext -> (CInt, CInt) -> (CInt, CInt) -> IO ()
+renderTargetPoints state ctx@(DrawContext {ctxRenderer = renderer}) (row, col) (wcell, hcell) = do
+  let (x, y) = (col * wcell + wcell `div` 2, row * hcell + hcell `div` 2)
   SDL.rendererDrawColor renderer $= colorWhite
-  SDL.drawPoints renderer points
-  pure ()
+  drawCircle ctx 2 (x, y)
+  when (stateIsMatched state) $ do
+    SDL.rendererDrawColor renderer $= colorFineGrainGrid
+    forM_ ([-8 .. 8] \\ [0]) $ \n -> do
+      let px = x + n * wcell `div` 16
+      SDL.drawLine renderer (SDL.P $ SDL.V2 px (y - hcell `div` 2)) (SDL.P $ SDL.V2 px (y + hcell `div` 2))
+    forM_ ([-8 .. 8] \\ [0]) $ \n -> do
+      let py = y + n * hcell `div` 16
+      SDL.drawLine renderer (SDL.P $ SDL.V2 (x - wcell `div` 2) py) (SDL.P $ SDL.V2 (x + wcell `div` 2) py)
+
+    SDL.rendererDrawColor renderer $= colorLightGray
+    let lenx = wcell `div` 4
+    let leny = hcell `div` 4
+    SDL.drawLine renderer (SDL.P $ SDL.V2 (x - wcell `div` 4) (y - leny)) (SDL.P $ SDL.V2 (x - wcell `div` 4) (y + leny))
+    SDL.drawLine renderer (SDL.P $ SDL.V2 (x + wcell `div` 4) (y - leny)) (SDL.P $ SDL.V2 (x + wcell `div` 4) (y + leny))
+    SDL.drawLine renderer (SDL.P $ SDL.V2 (x - lenx) (y - hcell `div` 4)) (SDL.P $ SDL.V2 (x + lenx) (y - hcell `div` 4))
+    SDL.drawLine renderer (SDL.P $ SDL.V2 (x - lenx) (y + hcell `div` 4)) (SDL.P $ SDL.V2 (x + lenx) (y + hcell `div` 4))
