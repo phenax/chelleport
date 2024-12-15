@@ -25,22 +25,30 @@ findMatchPosition keySequence = findWithIndex searchRows 0
 isValidKey :: SDL.Keycode -> Bool
 isValidKey = (`Map.member` keycodeMapping)
 
-generateKeyCells :: (Int, Int) -> KeySequence -> KeyGrid
-generateKeyCells (rows, columns) hintKeys =
-  (\row -> getCellSeq row <$> [1 .. columns]) <$> [1 .. rows]
+-- Linear Congruential Generator
+lcg :: Int -> Int
+lcg seed = (a * seed + c) `mod` fromIntegral m
   where
-    getCellSeq row col = [getPrefixHoriz row col, getPrefixVert row col, getKey row col]
-    getKey row col = hintKeys !! index
-      where
-        index = (secRow * (columns `div` 2) + secCol) `mod` length hintKeys
-        secCol = (col - 1) `mod` (columns `div` 2)
-        secRow = (row - 1) `mod` (rows `div` 2)
-    getPrefixHoriz _row col
-      | col <= (columns `div` 2) = 'H'
-      | otherwise = 'L'
-    getPrefixVert row _col
-      | row <= (rows `div` 2) = 'K'
-      | otherwise = 'J'
+    a = 1664525
+    c = 1013904223
+    m = (2 :: Integer) ^ (32 :: Integer)
+
+getIndexRounded :: Int -> [a] -> a
+getIndexRounded i ls = ls !! (i `mod` length ls)
+
+generateGrid :: Int -> (Int, Int) -> KeySequence -> Maybe KeyGrid
+generateGrid seed (rows, columns) hintKeys
+  | rows * columns > length hintKeys * length hintKeys = Nothing
+  | otherwise = Just $ (\row -> getKeySeq row <$> [0 .. columns - 1]) <$> [0 .. rows - 1]
+  where
+    allKeySeq = take numPairs . uniq $ generatePairs
+    numPairs = rows * columns
+    getKeySeq row col = allKeySeq !! (row * columns + col)
+    randomNumbers = iterate lcg seed
+    generatePairs =
+      [ [getIndexRounded i hintKeys, getIndexRounded j hintKeys]
+        | (i, j) <- zip randomNumbers (drop numPairs randomNumbers)
+      ]
 
 toKeyChar :: SDL.Keycode -> Maybe Char
 toKeyChar = (`Map.lookup` keycodeMapping)

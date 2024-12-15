@@ -1,6 +1,7 @@
 module Specs.KeySequenceSpec where
 
-import Chelleport.KeySequence (findMatchPosition, generateKeyCells, nextChars)
+import Chelleport.KeySequence (findMatchPosition, generateGrid, nextChars)
+import qualified Debug.Trace as Debug
 import Test.Hspec
 
 test = do
@@ -22,22 +23,15 @@ test = do
         nextChars "FOO" [["XYZ", "ABC"], ["AMK", "BBL", "ABD"]]
           `shouldBe` Nothing
 
-  describe "#generateKeyCells" $ do
+  describe "#generateGrid" $ do
     it "generates grid of key sequences" $ do
-      generateKeyCells (4, 4) "ABCDEF"
-        `shouldBe` [ ["HKA", "HKB", "LKA", "LKB"],
-                     ["HKC", "HKD", "LKC", "LKD"],
-                     ["HJA", "HJB", "LJA", "LJB"],
-                     ["HJC", "HJD", "LJC", "LJD"]
-                   ]
+      generateGrid 0 (4, 4) "ABCDEF"
+        `shouldBe` Just [["AE", "BD", "CC", "BB"], ["AC", "FD", "EE", "EC"], ["FB", "EA", "DF", "DD"], ["CA", "DB", "CE", "BF"]]
+
     context "when the the keys set is too short" $ do
       it "cycles back to first character" $ do
-        generateKeyCells (4, 4) "AB"
-          `shouldBe` [ ["HKA", "HKB", "LKA", "LKB"],
-                       ["HKA", "HKB", "LKA", "LKB"],
-                       ["HJA", "HJB", "LJA", "LJB"],
-                       ["HJA", "HJB", "LJA", "LJB"]
-                     ]
+        generateGrid 0 (4, 4) "AB"
+          `shouldBe` Nothing
 
   describe "#findMatchPosition" $ do
     it "returns the position of the matching key sequence" $ do

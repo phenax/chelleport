@@ -7,6 +7,8 @@ import Chelleport.KeySequence (eventToKeycode, findMatchPosition, generateGrid, 
 import Chelleport.Types
 import Chelleport.Utils (intToCInt)
 import qualified Chelleport.View
+import Data.List ((\\))
+import Data.Maybe (fromMaybe)
 import qualified SDL
 
 open :: IO ()
@@ -14,12 +16,12 @@ open = setupAppShell initialState update eventToAction Chelleport.View.render
 
 initialState :: DrawContext -> IO State
 initialState _ctx = do
-  let cells = generateGrid (rows, columns) hintKeys
+  let cells = fromMaybe (pure undefined) $ generateGrid 0 (rows, columns) hintKeys
   pure $ State {stateGrid = cells, stateKeySequence = []}
   where
     rows = 12
     columns = 12
-    hintKeys = "ABCDEFGHIJKLMNOPRSTUVWXYZ1234567890"
+    hintKeys = ['A' .. 'Z'] \\ "Q"
 
 update :: Update State AppAction
 update state _ctx (FilterSequence key) =
