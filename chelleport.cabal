@@ -44,6 +44,7 @@ library lib-chelleport
     sdl2 == 2.5.5.0,
     sdl2-ttf == 2.1.3,
     X11 == 1.10.3,
+    vector == 0.13.1.0,
     xtest == 0.2
   exposed-modules:
     Chelleport

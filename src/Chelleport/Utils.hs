@@ -2,10 +2,12 @@ module Chelleport.Utils where
 
 import Data.List (nub)
 import Foreign.C (CInt)
-import Unsafe.Coerce (unsafeCoerce)
 
 intToCInt :: Int -> CInt
-intToCInt = unsafeCoerce
+intToCInt = fromIntegral
+
+cIntToInt :: CInt -> Int
+cIntToInt = fromIntegral
 
 findWithIndex :: (x -> Maybe r) -> Int -> [x] -> Maybe (Int, r)
 findWithIndex _predicate _index [] = Nothing

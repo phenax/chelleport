@@ -11,7 +11,7 @@ type KeySequence = [Char]
 type KeyGrid = [[Cell]]
 
 data State = State
-  { stateCells :: KeyGrid,
+  { stateGrid :: KeyGrid,
     stateKeySequence :: KeySequence
   }
 

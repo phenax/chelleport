@@ -3,7 +3,7 @@ module Chelleport where
 import Chelleport.AppShell (Action (AppAction, SysQuit), EventHandler, Update, hideWindow, setupAppShell)
 import Chelleport.Control (isKeyPress, isKeyPressWith, moveMouse, triggerMouseLeftClick)
 import Chelleport.Draw (windowSize)
-import Chelleport.KeySequence (eventToKeycode, findMatchPosition, generateKeyCells, isValidKey, nextChars, toKeyChar)
+import Chelleport.KeySequence (eventToKeycode, findMatchPosition, generateGrid, isValidKey, nextChars, toKeyChar)
 import Chelleport.Types
 import Chelleport.Utils (intToCInt)
 import qualified Chelleport.View
@@ -14,8 +14,8 @@ open = setupAppShell initialState update eventToAction Chelleport.View.render
 
 initialState :: DrawContext -> IO State
 initialState _ctx = do
-  let cells = generateKeyCells (rows, columns) hintKeys
-  pure $ State {stateCells = cells, stateKeySequence = []}
+  let cells = generateGrid (rows, columns) hintKeys
+  pure $ State {stateGrid = cells, stateKeySequence = []}
   where
     rows = 12
     columns = 12
@@ -27,14 +27,14 @@ update state _ctx (FilterSequence key) =
     Just (keyChar, validChars')
       | keyChar `elem` validChars' -> do
           let newKeySequence = stateKeySequence state ++ [keyChar]
-          let matchPosition = findMatchPosition newKeySequence $ stateCells state
+          let matchPosition = findMatchPosition newKeySequence $ stateGrid state
           pure
             ( state {stateKeySequence = newKeySequence},
               AppAction . MoveMousePosition <$> matchPosition
             )
     _ -> pure (state, Nothing)
   where
-    validChars = nextChars (stateKeySequence state) (stateCells state)
+    validChars = nextChars (stateKeySequence state) (stateGrid state)
 update state ctx (MoveMousePosition (row, col)) = do
   (x, y) <- getPosition
   moveMouse ctx x y
@@ -42,7 +42,7 @@ update state ctx (MoveMousePosition (row, col)) = do
   where
     cellDimensions = do
       (SDL.V2 width height) <- windowSize ctx
-      let rows = stateCells state
+      let rows = stateGrid state
       let wcell = width `div` intToCInt (length $ head rows)
       let hcell = height `div` intToCInt (length rows)
       pure (wcell, hcell)

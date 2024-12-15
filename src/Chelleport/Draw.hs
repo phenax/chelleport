@@ -26,14 +26,14 @@ colorGridLines :: SDL.V4 Word8
 colorGridLines = SDL.V4 127 29 29 150
 
 colorAxisLines :: SDL.V4 Word8
-colorAxisLines = SDL.V4 239 68 68 255
+colorAxisLines = colorAccent
 
 colorBackground :: SDL.V4 Word8
 colorBackground = SDL.V4 15 12 25 0
 
 drawText :: DrawContext -> SDL.V2 CInt -> SDL.V4 Word8 -> Text -> IO (CInt, CInt)
 drawText ctx@(DrawContext {ctxRenderer = renderer}) position color text = do
-  surface <- TTF.solid (ctxFont ctx) color text -- TTF.blended
+  surface <- TTF.blended (ctxFont ctx) color text
   texture <- SDL.createTextureFromSurface renderer surface
   SDL.freeSurface surface
 
