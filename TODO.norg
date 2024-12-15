@@ -1,11 +1,13 @@
 * Current
-  - (x) Center cursor inside grid cells
   - ( ) After 3 keys, 2nd level navigation (allow hjkl to move)
-
-* Later
-  - ( ) Highlight only the ones that are selected. Dim others
   - ( ) Include font and embed in build
   - ( ) Multimonitor mouse move issue
 
+* Later
+  - ( ) Right click
+  - ( ) Double click
+  - ( ) Middle click
+
 * Maybe
   - ( ) Move cursor on the first 2 keys to the center of the section
+  - ( ) Select / drag n drop

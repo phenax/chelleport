@@ -1,4 +1,4 @@
 # Chelleport
 
-WIP
+Use your mouse with your keyboard.
 

@@ -7,13 +7,16 @@
   outputs = inputs@{ self, nixpkgs, flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = nixpkgs.lib.systems.flakeExposed;
-      imports = [ inputs.haskell-flake.flakeModule ];
+      imports = [
+        inputs.haskell-flake.flakeModule
+      ];
 
       perSystem = { self', pkgs, lib, config, ... }: {
         haskellProjects.default = {
           projectRoot = builtins.toString (lib.fileset.toSource {
             root = ./.;
             fileset = lib.fileset.unions [
+              ./bin
               ./src
               ./specs
               ./chelleport.cabal
@@ -25,7 +28,7 @@
 
           devShell = {
             # tools = hp: { fourmolu = hp.fourmolu; ghcid = null; };
-            hlsCheck.enable = pkgs.stdenv.isDarwin;
+            hlsCheck.enable = false;
           };
 
           autoWire = [ "packages" "apps" "checks" ];
@@ -40,7 +43,7 @@
           ];
           packages = with pkgs; [
             just
-            haskellPackages.hspec-golden
+            nodemon
           ];
         };
       };

@@ -19,6 +19,9 @@ colorGray = SDL.V4 55 52 65 200
 colorAccent :: SDL.V4 Word8
 colorAccent = SDL.V4 110 112 247 255
 
+colorHighlight :: SDL.V4 Word8
+colorHighlight = colorAccent
+
 colorGridLines :: SDL.V4 Word8
 colorGridLines = SDL.V4 127 29 29 150
 
@@ -29,9 +32,9 @@ colorBackground :: SDL.V4 Word8
 colorBackground = SDL.V4 15 12 25 0
 
 drawText :: DrawContext -> SDL.V2 CInt -> SDL.V4 Word8 -> Text -> IO (CInt, CInt)
-drawText ctx position color text = do
-  surface <- TTF.blended (ctxFont ctx) color text
-  texture <- SDL.createTextureFromSurface (ctxRenderer ctx) surface
+drawText ctx@(DrawContext {ctxRenderer = renderer}) position color text = do
+  surface <- TTF.solid (ctxFont ctx) color text -- TTF.blended
+  texture <- SDL.createTextureFromSurface renderer surface
   SDL.freeSurface surface
 
   -- Get text dimensions
@@ -40,18 +43,21 @@ drawText ctx position color text = do
   let textHeight = SDL.textureHeight textureInfo
 
   -- Render the texture
-  SDL.copy (ctxRenderer ctx) texture Nothing $
+  SDL.copy renderer texture Nothing $
     Just (SDL.Rectangle (SDL.P position) (SDL.V2 textWidth textHeight))
   SDL.destroyTexture texture
 
   pure (textWidth, textHeight)
 
+windowSize :: DrawContext -> IO (SDL.V2 CInt)
+windowSize = SDL.get . SDL.windowSize . ctxWindow
+
 drawHorizontalLine :: DrawContext -> CInt -> IO ()
-drawHorizontalLine ctx x = do
-  (SDL.V2 width _height) <- SDL.get $ SDL.windowSize $ ctxWindow ctx
-  SDL.drawLine (ctxRenderer ctx) (SDL.P $ SDL.V2 0 x) (SDL.P $ SDL.V2 width x)
+drawHorizontalLine ctx@(DrawContext {ctxRenderer = renderer}) x = do
+  (SDL.V2 width _height) <- windowSize ctx
+  SDL.drawLine renderer (SDL.P $ SDL.V2 0 x) (SDL.P $ SDL.V2 width x)
 
 drawVerticalLine :: DrawContext -> CInt -> IO ()
-drawVerticalLine ctx x = do
-  (SDL.V2 _width height) <- SDL.get $ SDL.windowSize $ ctxWindow ctx
-  SDL.drawLine (ctxRenderer ctx) (SDL.P $ SDL.V2 x 0) (SDL.P $ SDL.V2 x height)
+drawVerticalLine ctx@(DrawContext {ctxRenderer = renderer}) x = do
+  (SDL.V2 _width height) <- windowSize ctx
+  SDL.drawLine renderer (SDL.P $ SDL.V2 x 0) (SDL.P $ SDL.V2 x height)

@@ -1,12 +1,13 @@
 module Chelleport where
 
-import Chelleport.AppShell (Action (AppAction, SysQuit), hideWindow, setupAppShell, shutdownApp)
+import Chelleport.AppShell (Action (AppAction, SysQuit), EventHandler, Update, hideWindow, setupAppShell)
 import Chelleport.Control (isKeyPress, isKeyPressWith, moveMouse, triggerMouseLeftClick)
+import Chelleport.Draw (windowSize)
 import Chelleport.KeySequence (eventToKeycode, findMatchPosition, generateKeyCells, isValidKey, nextChars, toKeyChar)
 import Chelleport.Types
+import Chelleport.Utils (intToCInt)
 import qualified Chelleport.View
 import qualified SDL
-import Unsafe.Coerce (unsafeCoerce)
 
 open :: IO ()
 open = setupAppShell initialState update eventToAction Chelleport.View.render
@@ -16,43 +17,48 @@ initialState _ctx = do
   let cells = generateKeyCells (rows, columns) hintKeys
   pure $ State {stateCells = cells, stateKeySequence = []}
   where
-    rows = 16
-    columns = 16
+    rows = 12
+    columns = 12
     hintKeys = "ABCDEFGHIJKLMNOPRSTUVWXYZ1234567890"
 
-update :: State -> DrawContext -> AppAction -> IO State
-update state _ctx ResetKeys = pure state {stateKeySequence = []}
-update state ctx TriggerLeftClick = do
-  hideWindow ctx
-  triggerMouseLeftClick ctx
-  shutdownApp ctx
-  pure state
-update state ctx (FilterSequence key) =
+update :: Update State AppAction
+update state _ctx (FilterSequence key) =
   case liftA2 (,) (toKeyChar key) validChars of
     Just (keyChar, validChars')
       | keyChar `elem` validChars' -> do
           let newKeySequence = stateKeySequence state ++ [keyChar]
           let matchPosition = findMatchPosition newKeySequence $ stateCells state
-          maybe (pure ()) moveMouseToCell matchPosition
-          pure state {stateKeySequence = newKeySequence}
-    _ -> pure state
+          pure
+            ( state {stateKeySequence = newKeySequence},
+              AppAction . MoveMousePosition <$> matchPosition
+            )
+    _ -> pure (state, Nothing)
   where
     validChars = nextChars (stateKeySequence state) (stateCells state)
-
+update state ctx (MoveMousePosition (row, col)) = do
+  (x, y) <- getPosition
+  moveMouse ctx x y
+  pure (state, Nothing)
+  where
     cellDimensions = do
-      (SDL.V2 width height) <- SDL.get $ SDL.windowSize $ ctxWindow ctx
+      (SDL.V2 width height) <- windowSize ctx
       let rows = stateCells state
-      let wcell = width `div` unsafeCoerce (length $ head rows)
-      let hcell = height `div` unsafeCoerce (length rows)
+      let wcell = width `div` intToCInt (length $ head rows)
+      let hcell = height `div` intToCInt (length rows)
       pure (wcell, hcell)
 
-    moveMouseToCell (row, col) = do
+    getPosition = do
       (wcell, hcell) <- cellDimensions
-      let x = (wcell `div` 2) + wcell * unsafeCoerce col
-      let y = (hcell `div` 2) + hcell * unsafeCoerce row
-      moveMouse ctx x y
+      let x = (wcell `div` 2) + wcell * intToCInt col
+      let y = (hcell `div` 2) + hcell * intToCInt row
+      pure (x, y)
+update state _ctx ResetKeys = pure (state {stateKeySequence = []}, Nothing)
+update state ctx TriggerLeftClick = do
+  hideWindow ctx
+  triggerMouseLeftClick ctx
+  pure (state, Just SysQuit)
 
-eventToAction :: State -> SDL.Event -> Maybe (Action AppAction)
+eventToAction :: EventHandler State AppAction
 eventToAction _state event =
   case SDL.eventPayload event of
     SDL.QuitEvent -> Just SysQuit

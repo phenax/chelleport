@@ -2,6 +2,7 @@ module Chelleport.View (render) where
 
 import Chelleport.Draw
 import Chelleport.Types
+import Chelleport.Utils (intToCInt, isEmpty, isNotEmpty)
 import Control.Monad (forM_, unless, void)
 import Data.IORef (modifyIORef', newIORef, readIORef)
 import Data.List (isPrefixOf)
@@ -9,23 +10,19 @@ import qualified Data.Text as Text
 import Foreign.C (CInt)
 import SDL (($=))
 import qualified SDL
-import Unsafe.Coerce (unsafeCoerce)
-
-isEmpty :: [a] -> Bool
-isEmpty = null
 
 render :: State -> DrawContext -> IO ()
 render state ctx = do
   renderGridLines state ctx
 
-  (SDL.V2 width height) <- SDL.get $ SDL.windowSize $ ctxWindow ctx
+  (SDL.V2 width height) <- windowSize ctx
   let grid = stateCells state
-  let wcell = width `div` unsafeCoerce (length $ head grid)
-  let hcell = height `div` unsafeCoerce (length grid)
+  let wcell = width `div` intToCInt (length $ head grid)
+  let hcell = height `div` intToCInt (length grid)
 
   forM_ (zip [0 ..] grid) $ \(rowIndex, row) -> do
-    let py = rowIndex * hcell
     forM_ (zip [0 ..] row) $ \(colIndex, cell) -> do
+      let py = rowIndex * hcell
       let px = colIndex * wcell
       renderKeySequence ctx (stateKeySequence state) cell (px, py)
 
@@ -37,7 +34,7 @@ renderKeySequence ctx keySequence cell (px, py) = do
 
   let textColor
         | isEmpty keySequence = colorWhite
-        | not $ isEmpty matched = colorAccent
+        | isNotEmpty matched = colorHighlight
         | otherwise = colorGray
 
   widthRef <- newIORef 0
@@ -51,20 +48,20 @@ renderKeySequence ctx keySequence cell (px, py) = do
     void $ drawText ctx (SDL.V2 pos py) textColor $ Text.pack remaining
 
 renderGridLines :: State -> DrawContext -> IO ()
-renderGridLines state ctx = do
-  (SDL.V2 width height) <- SDL.get $ SDL.windowSize $ ctxWindow ctx
+renderGridLines state ctx@(DrawContext {ctxRenderer = renderer}) = do
+  (SDL.V2 width height) <- windowSize ctx
   let grid = stateCells state
-  let wcell = width `div` unsafeCoerce (length $ head grid)
-  let hcell = height `div` unsafeCoerce (length grid)
+  let wcell = width `div` intToCInt (length $ head grid)
+  let hcell = height `div` intToCInt (length grid)
 
-  SDL.rendererDrawColor (ctxRenderer ctx) $= colorGridLines
-  let rows = unsafeCoerce $ length grid
-  let columns = unsafeCoerce $ length $ head grid
+  SDL.rendererDrawColor renderer $= colorGridLines
+  let rows = intToCInt $ length grid
+  let columns = intToCInt $ length $ head grid
   forM_ [0 .. rows] $ \rowIndex -> do
     drawHorizontalLine ctx $ rowIndex * hcell
   forM_ [0 .. columns] $ \colIndex -> do
     drawVerticalLine ctx $ colIndex * wcell
 
-  SDL.rendererDrawColor (ctxRenderer ctx) $= colorAxisLines
+  SDL.rendererDrawColor renderer $= colorAxisLines
   drawHorizontalLine ctx (rows * hcell `div` 2)
   drawVerticalLine ctx (columns * wcell `div` 2)

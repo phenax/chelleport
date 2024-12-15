@@ -11,8 +11,8 @@ description:     Mouse control
 
 common common-config
   default-extensions:
+    ExplicitForAll,
     OverloadedStrings,
-    LambdaCase,
     QuasiQuotes,
     TemplateHaskell,
     TupleSections,
@@ -53,6 +53,7 @@ library lib-chelleport
     Chelleport.Draw
     Chelleport.KeySequence
     Chelleport.Types
+    Chelleport.Utils
     Chelleport.View
 
 test-suite specs
@@ -65,5 +66,4 @@ test-suite specs
   build-depends:
     lib-chelleport,
     neat-interpolation,
-    pretty-simple,
     hspec

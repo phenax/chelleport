@@ -1,34 +1,29 @@
 module Chelleport.KeySequence where
 
 import Chelleport.Types (KeyGrid, KeySequence)
-import Data.List (isPrefixOf, nub)
+import Chelleport.Utils (findWithIndex, uniq)
+import Control.Monad (guard)
+import Data.List (isPrefixOf)
 import qualified Data.Map as Map
 import qualified SDL
 
 nextChars :: KeySequence -> KeyGrid -> Maybe [Char]
-nextChars keys cells =
+nextChars keySequence cells =
   case matches of
     [] -> Nothing
-    _ -> Just $ nub result
+    _ -> Just nextCharactersInSequence
   where
-    matches = concatMap (filter (isPrefixOf keys)) cells
-    result = concatMap (take 1 . drop (length keys)) matches
-
-findWithIndex :: (x -> Maybe r) -> Int -> [x] -> Maybe (Int, r)
-findWithIndex _pred _index [] = Nothing
-findWithIndex predicate index (x : ls) =
-  case predicate x of
-    Just item -> Just (index, item)
-    Nothing -> findWithIndex predicate (index + 1) ls
+    matches = concatMap (filter $ isPrefixOf keySequence) cells
+    nextCharactersInSequence = uniq $ concatMap (take 1 . drop (length keySequence)) matches
 
 findMatchPosition :: KeySequence -> KeyGrid -> Maybe (Int, Int)
-findMatchPosition keys = findWithIndex findMatch 0
+findMatchPosition keySequence = findWithIndex searchRows 0
   where
-    findMatch =
-      fmap fst . findWithIndex (\c -> if c == keys then Just () else Nothing) 0
+    searchRows = fmap fst . findWithIndex searchInRow 0
+    searchInRow = guard . (== keySequence)
 
 isValidKey :: SDL.Keycode -> Bool
-isValidKey key = Map.member key keycodeMapping
+isValidKey = (`Map.member` keycodeMapping)
 
 generateKeyCells :: (Int, Int) -> KeySequence -> KeyGrid
 generateKeyCells (rows, columns) hintKeys =
@@ -48,7 +43,7 @@ generateKeyCells (rows, columns) hintKeys =
       | otherwise = 'J'
 
 toKeyChar :: SDL.Keycode -> Maybe Char
-toKeyChar key = Map.lookup key keycodeMapping
+toKeyChar = (`Map.lookup` keycodeMapping)
 
 eventToKeycode :: SDL.KeyboardEventData -> SDL.Keycode
 eventToKeycode = SDL.keysymKeycode . SDL.keyboardEventKeysym
