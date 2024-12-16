@@ -26,8 +26,8 @@ initialState _ctx = do
         stateIsShiftPressed = False
       }
   where
-    rows = 12
-    columns = 12
+    rows = 9
+    columns = 16
     hintKeys = ['A' .. 'Z'] \\ "Q"
 
 directionalIncrement :: (CInt, CInt) -> Char -> (Int, Int)
