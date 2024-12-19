@@ -11,7 +11,7 @@ import Chelleport.Types
 import Chelleport.Utils (intToCInt)
 import qualified Chelleport.View
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Reader (MonadReader, ReaderT (runReaderT))
+import Control.Monad.Reader (ReaderT (runReaderT))
 import Data.List ((\\))
 import Data.Maybe (fromMaybe, isJust)
 import qualified SDL
@@ -66,7 +66,7 @@ eventToAction _state event =
     _ -> Nothing
 
 update ::
-  (MonadIO m, MonadAppShell m, MonadDraw m, MonadControl m, MonadReader DrawContext m) =>
+  (MonadAppShell m, MonadDraw m, MonadControl m) =>
   State ->
   AppAction ->
   m (State, Maybe AppAction)
