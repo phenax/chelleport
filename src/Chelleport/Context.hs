@@ -17,6 +17,10 @@ fontSize = 24
 
 initializeContext :: IO DrawContext
 initializeContext = do
+  -- Initialize SDL
+  SDL.initializeAll
+  TTF.initialize
+
   window <- initializeWindow
   renderer <- initializeRenderer window
   font <- loadFont

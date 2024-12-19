@@ -2,12 +2,78 @@ module Chelleport.Draw where
 
 import Chelleport.Types
 import Chelleport.Utils (intToCInt)
+import Control.Monad.Reader (MonadIO, MonadReader (ask))
 import Data.Text (Text)
 import qualified Data.Vector.Storable as Vector
 import Data.Word (Word8)
 import Foreign.C (CInt)
+import SDL (($=))
 import qualified SDL
 import qualified SDL.Font as TTF
+
+class (Monad m) => MonadDraw m where
+  drawLine :: (CInt, CInt) -> (CInt, CInt) -> m ()
+  drawText :: (CInt, CInt) -> SDL.V4 Word8 -> Text -> m (CInt, CInt)
+  drawCircle :: Int -> (CInt, CInt) -> m ()
+  setDrawColor :: SDL.V4 Word8 -> m ()
+  windowSize :: m (SDL.V2 CInt)
+
+instance (MonadIO m) => MonadDraw (AppM m) where
+  drawLine (x1, y1) (x2, y2) = do
+    DrawContext {ctxRenderer = renderer} <- ask
+    SDL.drawLine renderer (SDL.P $ SDL.V2 x1 y1) (SDL.P $ SDL.V2 x2 y2)
+
+  setDrawColor color = do
+    DrawContext {ctxRenderer = renderer} <- ask
+    SDL.rendererDrawColor renderer $= color
+
+  drawText (x, y) color text = do
+    DrawContext {ctxRenderer = renderer, ctxFont = font} <- ask
+    surface <- TTF.blended font color text
+    texture <- SDL.createTextureFromSurface renderer surface
+    SDL.freeSurface surface
+
+    -- Get text dimensions
+    textureInfo <- SDL.queryTexture texture
+    let textWidth = SDL.textureWidth textureInfo
+    let textHeight = SDL.textureHeight textureInfo
+
+    -- Render the texture
+    SDL.copy renderer texture Nothing $
+      Just (SDL.Rectangle (SDL.P $ SDL.V2 x y) (SDL.V2 textWidth textHeight))
+    SDL.destroyTexture texture
+
+    pure (textWidth, textHeight)
+
+  drawCircle radius (x, y) = do
+    DrawContext {ctxRenderer = renderer} <- ask
+    let renderedPoints = radius * 7
+    let toTheta n = fromIntegral n * (2 * pi) / fromIntegral renderedPoints
+    let toPointOnCircle n =
+          SDL.V2
+            (x + round ((fromIntegral radius :: Float) * cos (toTheta n)))
+            (y + round ((fromIntegral radius :: Float) * sin (toTheta n)))
+    let points = Vector.generate renderedPoints (SDL.P . toPointOnCircle)
+    SDL.drawPoints renderer points
+
+  windowSize = ask >>= SDL.get . SDL.windowSize . ctxWindow
+
+cellSize :: (MonadDraw m) => State -> m (CInt, CInt)
+cellSize (State {stateGrid}) = do
+  (SDL.V2 width height) <- windowSize
+  let wcell = width `div` intToCInt (length $ head stateGrid)
+  let hcell = height `div` intToCInt (length stateGrid)
+  pure (wcell, hcell)
+
+drawHorizontalLine :: (MonadDraw m) => CInt -> m ()
+drawHorizontalLine y = do
+  (SDL.V2 width _) <- windowSize
+  drawLine (0, y) (width, y)
+
+drawVerticalLine :: (MonadDraw m) => CInt -> m ()
+drawVerticalLine x = do
+  (SDL.V2 _width height) <- windowSize
+  drawLine (x, 0) (x, height)
 
 colorWhite :: SDL.V4 Word8
 colorWhite = SDL.V4 255 255 255 255
@@ -38,53 +104,3 @@ colorBackground = SDL.V4 15 12 25 0
 
 colorFineGrainGrid :: SDL.V4 Word8
 colorFineGrainGrid = SDL.V4 55 52 65 100
-
-drawText :: DrawContext -> SDL.V2 CInt -> SDL.V4 Word8 -> Text -> IO (CInt, CInt)
-drawText ctx@(DrawContext {ctxRenderer = renderer}) position color text = do
-  surface <- TTF.blended (ctxFont ctx) color text
-  texture <- SDL.createTextureFromSurface renderer surface
-  SDL.freeSurface surface
-
-  -- Get text dimensions
-  textureInfo <- SDL.queryTexture texture
-  let textWidth = SDL.textureWidth textureInfo
-  let textHeight = SDL.textureHeight textureInfo
-
-  -- Render the texture
-  SDL.copy renderer texture Nothing $
-    Just (SDL.Rectangle (SDL.P position) (SDL.V2 textWidth textHeight))
-  SDL.destroyTexture texture
-
-  pure (textWidth, textHeight)
-
-windowSize :: DrawContext -> IO (SDL.V2 CInt)
-windowSize = SDL.get . SDL.windowSize . ctxWindow
-
-cellSize :: State -> DrawContext -> IO (CInt, CInt)
-cellSize state ctx = do
-  (SDL.V2 width height) <- windowSize ctx
-  let rows = stateGrid state
-  let wcell = width `div` intToCInt (length $ head rows)
-  let hcell = height `div` intToCInt (length rows)
-  pure (wcell, hcell)
-
-drawHorizontalLine :: DrawContext -> CInt -> IO ()
-drawHorizontalLine ctx@(DrawContext {ctxRenderer = renderer}) x = do
-  (SDL.V2 width _height) <- windowSize ctx
-  SDL.drawLine renderer (SDL.P $ SDL.V2 0 x) (SDL.P $ SDL.V2 width x)
-
-drawVerticalLine :: DrawContext -> CInt -> IO ()
-drawVerticalLine ctx@(DrawContext {ctxRenderer = renderer}) x = do
-  (SDL.V2 _width height) <- windowSize ctx
-  SDL.drawLine renderer (SDL.P $ SDL.V2 x 0) (SDL.P $ SDL.V2 x height)
-
-drawCircle :: DrawContext -> Int -> (CInt, CInt) -> IO ()
-drawCircle (DrawContext {ctxRenderer = renderer}) radius (x, y) = do
-  let renderedPoints = radius * 7
-  let toTheta n = fromIntegral n * (2 * pi) / fromIntegral renderedPoints
-  let toPointOnCircle n =
-        SDL.V2
-          (x + round ((fromIntegral radius :: Float) * cos (toTheta n)))
-          (y + round ((fromIntegral radius :: Float) * sin (toTheta n)))
-  let points = Vector.generate renderedPoints (SDL.P . toPointOnCircle)
-  SDL.drawPoints renderer points

@@ -3,4 +3,4 @@ module Main where
 import qualified Chelleport
 
 main :: IO ()
-main = Chelleport.open
+main = Chelleport.run
