@@ -6,9 +6,10 @@ import Chelleport.Draw (MonadDraw (..))
 import Chelleport.Types
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.State (MonadState (get, state), StateT (runStateT), gets)
+import Control.Monad.State (MonadState (state), StateT (runStateT))
 import Data.Text (Text)
 import Foreign.C (CInt)
+import Test.Hspec
 
 data Call
   = CallPressMouseButton MouseButtonType
@@ -25,10 +26,14 @@ data Call
   deriving (Show, Eq)
 
 newtype MockCalls = MockCalls {calls :: [Call]}
+  deriving (Show)
 
 registerMockCall :: (MonadState MockCalls m) => Call -> m ()
 registerMockCall call =
   void $ state (\mock -> ((), MockCalls {calls = calls mock ++ [call]}))
+
+shouldHaveCalled :: (HasCallStack) => MockCalls -> Call -> Expectation
+shouldHaveCalled mock call = calls mock `shouldContain` [call]
 
 runWithMocks :: (MonadIO m) => TestM m a -> m (a, MockCalls)
 runWithMocks action = runStateT (runTestM action) (MockCalls [])
@@ -39,14 +44,14 @@ newtype TestM m a = TestM {runTestM :: StateT MockCalls m a}
 instance (MonadIO m) => MonadControl (TestM m) where
   pressMouseButton btn = registerMockCall $ CallPressMouseButton btn
   moveMousePointer x y = registerMockCall $ CallMoveMousePosition x y
-  getMousePointerPosition = (0, 0) <$ registerMockCall CallGetMousePointerPosition
+  getMousePointerPosition = (42, 42) <$ registerMockCall CallGetMousePointerPosition
 
 instance (MonadIO m) => MonadDraw (TestM m) where
   drawLine p1 p2 = registerMockCall $ CallDrawLine p1 p2
   drawText p color text = (0, 0) <$ registerMockCall (CallDrawText p color text)
   drawCircle radius p = registerMockCall $ CallDrawCircle radius p
   setDrawColor color = registerMockCall $ CallSetDrawColor color
-  windowSize = 0 <$ registerMockCall CallWindowSize
+  windowSize = 100 <$ registerMockCall CallWindowSize
 
 instance (MonadIO m) => MonadAppShell (TestM m) where
   hideWindow = registerMockCall CallHideWindow

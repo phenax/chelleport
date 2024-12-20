@@ -30,7 +30,7 @@ run = do
     ctx
     (runEff ctx initialState)
     (\state -> runEff ctx . update state)
-    eventToAction
+    (const eventHandler)
     (runEff ctx . Chelleport.View.render)
 
 initialState :: (MonadIO m) => m State
@@ -48,8 +48,8 @@ initialState = do
     columns = 16
     hintKeys = ['A' .. 'Z'] \\ "Q"
 
-eventToAction :: EventHandler State AppAction
-eventToAction _state event =
+eventHandler :: SDL.Event -> Maybe AppAction
+eventHandler event =
   case SDL.eventPayload event of
     SDL.QuitEvent -> Just ShutdownApp
     SDL.KeyboardEvent ev
@@ -72,8 +72,8 @@ update ::
   m (State, Maybe AppAction)
 -- Act on key inputs
 update state (HandleKeyInput key) = do
-  case liftA2 (,) (toKeyChar key) validChars of
-    Just (keyChar, validChars')
+  case (toKeyChar key, validChars) of
+    (Just keyChar, Just validChars')
       | stateIsMatched state && keyChar `elem` ("HJKL" :: String) -> do
           incr <- incrementValue
           let action = IncrementMouseCursor $ directionalIncrement incr keyChar

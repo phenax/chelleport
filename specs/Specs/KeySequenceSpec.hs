@@ -1,9 +1,9 @@
 module Specs.KeySequenceSpec where
 
 import Chelleport.KeySequence (findMatchPosition, generateGrid, nextChars)
-import qualified Debug.Trace as Debug
 import Test.Hspec
 
+test :: SpecWith ()
 test = do
   describe "#nextChars" $ do
     context "when there is a partial match" $ do
