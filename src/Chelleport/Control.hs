@@ -29,7 +29,8 @@ instance (MonadIO m) => MonadControl (AppM m) where
         LeftClick -> X11.button1
 
   moveMousePointer x y = do
-    SDL.warpMouse SDL.WarpGlobal (SDL.P $ SDL.V2 x y)
+    DrawContext {ctxWindow = window} <- ask
+    SDL.warpMouse (SDL.WarpInWindow window) (SDL.P $ SDL.V2 x y)
 
   getMousePointerPosition = do
     (SDL.P (SDL.V2 x y)) <- SDL.getAbsoluteMouseLocation
