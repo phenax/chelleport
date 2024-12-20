@@ -53,11 +53,16 @@ eventHandler event =
     SDL.QuitEvent -> Just ShutdownApp
     SDL.KeyboardEvent ev
       | isKeyPressWith ev SDL.KeycodeEscape -> Just ShutdownApp
+      | isKeyPressWith ev SDL.KeycodeMinus || isKeyPressWith ev SDL.KeycodeUnderscore ->
+          if withShift ev
+            then Just $ ChainMouseClick RightClick
+            else Just $ TriggerMouseClick RightClick
       | isKeyPressWith ev SDL.KeycodeSpace ->
           if withShift ev
             then Just $ ChainMouseClick LeftClick
             else Just $ TriggerMouseClick LeftClick
-      | isKeyPressWith ev SDL.KeycodeTab -> Just ResetKeys
+      | isKeyPressWith ev SDL.KeycodeTab || isKeyPressWith ev SDL.KeycodeBackspace ->
+          Just ResetKeys
       | isKeyPressed ev && isValidKey (eventToKeycode ev) ->
           Just $ HandleKeyInput $ eventToKeycode ev
       | isKeyPressWith ev SDL.KeycodeLShift || isKeyPressWith ev SDL.KeycodeRShift ->

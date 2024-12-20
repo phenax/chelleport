@@ -20,13 +20,14 @@ instance (MonadIO m) => MonadControl (AppM m) where
     (DrawContext {ctxX11Display = display}) <- ask
     liftIO $ do
       -- Wrap with delay to prevent async window close issues. TODO: Remove maybe?
-      threadDelay 30_000
+      threadDelay 20_000
       X11.fakeButtonPress display x11Button
       X11.sync display False
-      threadDelay 30_000
+      threadDelay 20_000
     where
       x11Button = case btn of
         LeftClick -> X11.button1
+        RightClick -> X11.button3
 
   moveMousePointer x y = do
     DrawContext {ctxWindow = window} <- ask

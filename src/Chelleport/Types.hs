@@ -40,7 +40,7 @@ data DrawContext = DrawContext
     ctxX11Display :: X11.Display
   }
 
-data MouseButtonType = LeftClick
+data MouseButtonType = LeftClick | RightClick
   deriving (Show, Eq)
 
 newtype AppM m a = AppM {runAppM :: ReaderT DrawContext m a}

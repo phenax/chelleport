@@ -81,6 +81,7 @@ test-suite specs
     Mock
     Specs.KeySequenceSpec
     Specs.AppStateUpdateSpec
+    Specs.AppEventSpec
   build-depends:
     lib-chelleport,
     neat-interpolation,
