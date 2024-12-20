@@ -2,9 +2,9 @@
 
 module Chelleport where
 
-import Chelleport.AppShell (MonadAppShell (hideWindow, shutdownApp), setupAppShell)
+import Chelleport.AppShell (MonadAppShell (hideWindow, showWindow, shutdownApp), setupAppShell)
 import Chelleport.Context (initializeContext)
-import Chelleport.Control (MonadControl (getMousePointerPosition, moveMousePointer, pressMouseButton), directionalIncrement, eventToKeycode, isKeyPress, isKeyPressWith, isKeyReleaseWith)
+import Chelleport.Control (MonadControl (getMousePointerPosition, moveMousePointer, pressMouseButton), directionalIncrement, eventToKeycode, isKeyPressWith, isKeyPressed, isKeyReleaseWith, withShift)
 import Chelleport.Draw (MonadDraw, cellSize)
 import Chelleport.KeySequence (findMatchPosition, generateGrid, isValidKey, nextChars, toKeyChar)
 import Chelleport.Types
@@ -12,7 +12,6 @@ import Chelleport.Utils (intToCInt)
 import qualified Chelleport.View
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader (ReaderT (runReaderT))
-import Data.List ((\\))
 import Data.Maybe (fromMaybe, isJust)
 import qualified SDL
 
@@ -46,18 +45,20 @@ initialState = do
   where
     rows = 9
     columns = 16
-    hintKeys = ['A' .. 'Z'] \\ "Q"
+    hintKeys = ['A' .. 'Z']
 
 eventHandler :: SDL.Event -> Maybe AppAction
 eventHandler event =
   case SDL.eventPayload event of
     SDL.QuitEvent -> Just ShutdownApp
     SDL.KeyboardEvent ev
-      | isKeyPressWith ev SDL.KeycodeQ -> Just ShutdownApp
       | isKeyPressWith ev SDL.KeycodeEscape -> Just ShutdownApp
-      | isKeyPressWith ev SDL.KeycodeSpace -> Just TriggerLeftClick
+      | isKeyPressWith ev SDL.KeycodeSpace ->
+          if withShift ev
+            then Just ChainLeftClick
+            else Just TriggerLeftClick
       | isKeyPressWith ev SDL.KeycodeTab -> Just ResetKeys
-      | isKeyPress ev && isValidKey (eventToKeycode ev) ->
+      | isKeyPressed ev && isValidKey (eventToKeycode ev) ->
           Just $ HandleKeyInput $ eventToKeycode ev
       | isKeyPressWith ev SDL.KeycodeLShift || isKeyPressWith ev SDL.KeycodeRShift ->
           Just $ UpdateShiftState True
@@ -119,6 +120,13 @@ update state TriggerLeftClick = do
   hideWindow
   pressMouseButton LeftClick
   pure (state, Just ShutdownApp)
+
+-- Chain clicks
+update state ChainLeftClick = do
+  hideWindow
+  pressMouseButton LeftClick
+  showWindow
+  pure (state, Just ResetKeys)
 
 -- Cleanup everything and exit
 update state ShutdownApp = do

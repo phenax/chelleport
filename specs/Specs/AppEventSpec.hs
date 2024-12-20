@@ -31,11 +31,6 @@ test = do
         let action = eventHandler $ mkEvent SDL.QuitEvent
         action `shouldBe` Just ShutdownApp
 
-    context "when q key is pressed" $ do
-      it "shuts down app" $ do
-        let action = eventHandler $ mkKeyboardEvent SDL.KeycodeQ SDL.Pressed
-        action `shouldBe` Just ShutdownApp
-
     context "when escape key is pressed" $ do
       it "shuts down app" $ do
         let action = eventHandler $ mkKeyboardEvent SDL.KeycodeEscape SDL.Pressed
@@ -54,7 +49,7 @@ test = do
     context "when an alphanumeric key (excluding Q) is pressed" $ do
       it "calls key input handler" $ do
         eventHandler (mkKeyboardEvent SDL.KeycodeA SDL.Pressed) `shouldBe` Just (HandleKeyInput SDL.KeycodeA)
-        eventHandler (mkKeyboardEvent SDL.KeycodeB SDL.Pressed) `shouldBe` Just (HandleKeyInput SDL.KeycodeB)
+        eventHandler (mkKeyboardEvent SDL.KeycodeQ SDL.Pressed) `shouldBe` Just (HandleKeyInput SDL.KeycodeQ)
         eventHandler (mkKeyboardEvent SDL.Keycode9 SDL.Pressed) `shouldBe` Just (HandleKeyInput SDL.Keycode9)
 
     context "when shift key is pressed" $ do

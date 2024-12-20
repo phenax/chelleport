@@ -72,6 +72,7 @@ keycodeMapping =
       (SDL.KeycodeN, 'N'),
       (SDL.KeycodeO, 'O'),
       (SDL.KeycodeP, 'P'),
+      (SDL.KeycodeQ, 'Q'),
       (SDL.KeycodeR, 'R'),
       (SDL.KeycodeS, 'S'),
       (SDL.KeycodeT, 'T'),

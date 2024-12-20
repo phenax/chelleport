@@ -36,8 +36,8 @@ instance (MonadIO m) => MonadControl (AppM m) where
     (SDL.P (SDL.V2 x y)) <- SDL.getAbsoluteMouseLocation
     pure (x, y)
 
-isKeyPress :: SDL.KeyboardEventData -> Bool
-isKeyPress = (== SDL.Pressed) . SDL.keyboardEventKeyMotion
+isKeyPressed :: SDL.KeyboardEventData -> Bool
+isKeyPressed = (== SDL.Pressed) . SDL.keyboardEventKeyMotion
 
 isKeyRelease :: SDL.KeyboardEventData -> Bool
 isKeyRelease = (== SDL.Released) . SDL.keyboardEventKeyMotion
@@ -47,11 +47,16 @@ eventToKeycode = SDL.keysymKeycode . SDL.keyboardEventKeysym
 
 isKeyPressWith :: SDL.KeyboardEventData -> SDL.Keycode -> Bool
 isKeyPressWith keyboardEvent keyCode =
-  isKeyPress keyboardEvent && eventToKeycode keyboardEvent == keyCode
+  isKeyPressed keyboardEvent && eventToKeycode keyboardEvent == keyCode
 
 isKeyReleaseWith :: SDL.KeyboardEventData -> SDL.Keycode -> Bool
 isKeyReleaseWith keyboardEvent keyCode =
   isKeyRelease keyboardEvent && eventToKeycode keyboardEvent == keyCode
+
+withShift :: SDL.KeyboardEventData -> Bool
+withShift event = SDL.keyModifierLeftShift modifier || SDL.keyModifierRightShift modifier
+  where
+    modifier = SDL.keysymModifier . SDL.keyboardEventKeysym $ event
 
 directionalIncrement :: (CInt, CInt) -> Char -> (Int, Int)
 directionalIncrement (incX, incY) = \case

@@ -27,6 +27,7 @@ data AppAction
   | MoveMousePosition (Int, Int)
   | ResetKeys
   | TriggerLeftClick
+  | ChainLeftClick
   | IncrementMouseCursor (Int, Int)
   | ShutdownApp
   | UpdateShiftState Bool

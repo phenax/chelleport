@@ -1,11 +1,10 @@
 * Current
-  - ( ) Multimonitor mouse move issue
+  - ( ) Select / drag n drop
   - ( ) Right click
-
-* Later
   - ( ) Double click
   - ( ) Middle click
+
+* Later
   - ( ) Look into making controls cross-platform (remove x11?)
 
 * Maybe
-  - ( ) Select / drag n drop

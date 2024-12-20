@@ -58,17 +58,25 @@ test = do
     context "with action TriggerLeftClick" $ do
       let currentState = defaultState
 
-      it "hides window and triggers left clicks" $ do
+      it "hides window and triggers left click" $ do
         (_, mock) <- runWithMocks $ update currentState TriggerLeftClick
         calls mock `shouldContain` [CallHideWindow, CallPressMouseButton LeftClick]
 
       it "continues with action ShutdownApp without updating state" $ do
         ((nextState, action), _) <- runWithMocks $ update currentState TriggerLeftClick
-        -- handleMocks
-        --   [ CallPressMouseButton LeftClick `returns` (1, 2),
-        --     CallHideWindow `returns` ()
-        --   ]
         action `shouldBe` Just ShutdownApp
+        nextState `shouldBe` currentState
+
+    context "with action ChainLeftClick" $ do
+      let currentState = defaultState
+
+      it "hides window, triggers left click and shows the window again" $ do
+        (_, mock) <- runWithMocks $ update currentState ChainLeftClick
+        calls mock `shouldBe` [CallHideWindow, CallPressMouseButton LeftClick, CallShowWindow]
+
+      it "continues with action ResetKeys without updating state" $ do
+        ((nextState, action), _) <- runWithMocks $ update currentState ChainLeftClick
+        action `shouldBe` Just ResetKeys
         nextState `shouldBe` currentState
 
     context "with action MoveMousePosition" $ do
@@ -77,6 +85,10 @@ test = do
       -- TODO: Test with inline mocked values
       it "moves mouse pointer to center of cell of given coordinates" $ do
         (_, mock) <- runWithMocks $ update currentState $ MoveMousePosition (0, 0)
+        -- handleMocks
+        --   [ CallPressMouseButton LeftClick `returns` (1, 2),
+        --     CallHideWindow `returns` ()
+        --   ]
         mock `shouldHaveCalled` CallMoveMousePosition 25 25
 
       it "does not continue or update state" $ do
@@ -95,7 +107,7 @@ test = do
       let currentState = defaultState
 
       -- TODO: Test with inline mocked values
-      it "hides window and triggers left clicks" $ do
+      it "increments mouse position relative to current position" $ do
         (_, mock) <- runWithMocks $ update currentState $ IncrementMouseCursor (10, -20)
         mock `shouldHaveCalled` CallMoveMousePosition 52 22
 
@@ -106,7 +118,7 @@ test = do
     context "with action ShutdownApp" $ do
       let currentState = defaultState
 
-      it "hides window and triggers left clicks" $ do
+      it "shuts down app" $ do
         (_, mock) <- runWithMocks $ update currentState ShutdownApp
         mock `shouldHaveCalled` CallShutdownApp
 
