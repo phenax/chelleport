@@ -39,7 +39,7 @@ test = do
     context "when space key is pressed" $ do
       it "triggers left mouse button click" $ do
         let action = eventHandler $ mkKeyboardEvent SDL.KeycodeSpace SDL.Pressed
-        action `shouldBe` Just TriggerLeftClick
+        action `shouldBe` Just (TriggerMouseClick LeftClick)
 
     context "when tab key is pressed" $ do
       it "resets key state" $ do

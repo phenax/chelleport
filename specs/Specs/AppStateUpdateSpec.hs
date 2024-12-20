@@ -2,6 +2,8 @@ module Specs.AppStateUpdateSpec where
 
 import Chelleport (initialState, update)
 import Chelleport.Types
+import Chelleport.Utils (uniq)
+import Control.Monad (join)
 import Mock
 import qualified SDL
 import Test.Hspec
@@ -11,12 +13,19 @@ test = do
   describe "#initialState" $ do
     it "returns the initial state of the app" $ do
       (initState, _) <- runWithMocks initialState
-      length (stateGrid initState) `shouldBe` 9
-      stateGrid initState `shouldSatisfy` all ((== 16) . length)
-      stateGrid initState `shouldSatisfy` all (all ((== 2) . length))
       stateKeySequence initState `shouldBe` []
       stateIsMatched initState `shouldBe` False
       stateIsShiftPressed initState `shouldBe` False
+
+    it "returns grid with 16x9 key sequences" $ do
+      (initState, _) <- runWithMocks initialState
+      length (stateGrid initState) `shouldBe` 9
+      stateGrid initState `shouldSatisfy` all ((== 16) . length)
+      stateGrid initState `shouldSatisfy` all (all ((== 2) . length))
+
+    it "returns grid with all unique key sequences" $ do
+      (initState, _) <- runWithMocks initialState
+      join (stateGrid initState) `shouldBe` uniq (join $ stateGrid initState)
 
   describe "#update" $ do
     let defaultState =
@@ -55,27 +64,27 @@ test = do
             ((_, action), _) <- runWithMocks $ update currentState $ HandleKeyInput SDL.KeycodeF
             action `shouldBe` Just (MoveMousePosition (0, 1))
 
-    context "with action TriggerLeftClick" $ do
+    context "with action TriggerMouseClick" $ do
       let currentState = defaultState
 
-      it "hides window and triggers left click" $ do
-        (_, mock) <- runWithMocks $ update currentState TriggerLeftClick
+      it "hides window and triggers mouse click" $ do
+        (_, mock) <- runWithMocks $ update currentState $ TriggerMouseClick LeftClick
         calls mock `shouldContain` [CallHideWindow, CallPressMouseButton LeftClick]
 
       it "continues with action ShutdownApp without updating state" $ do
-        ((nextState, action), _) <- runWithMocks $ update currentState TriggerLeftClick
+        ((nextState, action), _) <- runWithMocks $ update currentState $ TriggerMouseClick LeftClick
         action `shouldBe` Just ShutdownApp
         nextState `shouldBe` currentState
 
-    context "with action ChainLeftClick" $ do
+    context "with action ChainMouseClick" $ do
       let currentState = defaultState
 
-      it "hides window, triggers left click and shows the window again" $ do
-        (_, mock) <- runWithMocks $ update currentState ChainLeftClick
+      it "hides window, triggers mouse click and shows the window again" $ do
+        (_, mock) <- runWithMocks $ update currentState $ ChainMouseClick LeftClick
         calls mock `shouldBe` [CallHideWindow, CallPressMouseButton LeftClick, CallShowWindow]
 
       it "continues with action ResetKeys without updating state" $ do
-        ((nextState, action), _) <- runWithMocks $ update currentState ChainLeftClick
+        ((nextState, action), _) <- runWithMocks $ update currentState $ ChainMouseClick LeftClick
         action `shouldBe` Just ResetKeys
         nextState `shouldBe` currentState
 

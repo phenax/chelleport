@@ -1,4 +1,4 @@
-module Chelleport.AppShell where
+module Chelleport.AppShell (setupAppShell, MonadAppShell (..)) where
 
 import Chelleport.Draw (colorBackground)
 import Chelleport.Types
@@ -25,6 +25,14 @@ instance (MonadIO m) => MonadAppShell (AppM m) where
     liftIO $ do
       X11.closeDisplay $ ctxX11Display ctx
       exitSuccess
+
+type Update state appAction = state -> appAction -> IO (state, Maybe appAction)
+
+type EventHandler state appAction = state -> SDL.Event -> Maybe appAction
+
+type View state = state -> IO ()
+
+type Initializer state = IO state
 
 setupAppShell ::
   DrawContext ->

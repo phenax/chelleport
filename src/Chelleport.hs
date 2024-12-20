@@ -32,7 +32,7 @@ run = do
     (const eventHandler)
     (runEff ctx . Chelleport.View.render)
 
-initialState :: (MonadIO m) => m State
+initialState :: (Monad m) => m State
 initialState = do
   let cells = fromMaybe (pure undefined) $ generateGrid 0 (rows, columns) hintKeys
   pure $
@@ -55,8 +55,8 @@ eventHandler event =
       | isKeyPressWith ev SDL.KeycodeEscape -> Just ShutdownApp
       | isKeyPressWith ev SDL.KeycodeSpace ->
           if withShift ev
-            then Just ChainLeftClick
-            else Just TriggerLeftClick
+            then Just $ ChainMouseClick LeftClick
+            else Just $ TriggerMouseClick LeftClick
       | isKeyPressWith ev SDL.KeycodeTab -> Just ResetKeys
       | isKeyPressed ev && isValidKey (eventToKeycode ev) ->
           Just $ HandleKeyInput $ eventToKeycode ev
@@ -66,11 +66,7 @@ eventHandler event =
           Just $ UpdateShiftState False
     _ -> Nothing
 
-update ::
-  (MonadAppShell m, MonadDraw m, MonadControl m) =>
-  State ->
-  AppAction ->
-  m (State, Maybe AppAction)
+update :: (MonadAppShell m, MonadDraw m, MonadControl m) => State -> AppAction -> m (State, Maybe AppAction)
 -- Act on key inputs
 update state (HandleKeyInput key) = do
   case (toKeyChar key, validChars) of
@@ -115,16 +111,16 @@ update state (MoveMousePosition (row, col)) = do
 update state ResetKeys = do
   pure (state {stateKeySequence = [], stateIsMatched = False}, Nothing)
 
--- Trigger left click
-update state TriggerLeftClick = do
+-- Trigger click
+update state (TriggerMouseClick btn) = do
   hideWindow
-  pressMouseButton LeftClick
+  pressMouseButton btn
   pure (state, Just ShutdownApp)
 
 -- Chain clicks
-update state ChainLeftClick = do
+update state (ChainMouseClick btn) = do
   hideWindow
-  pressMouseButton LeftClick
+  pressMouseButton btn
   showWindow
   pure (state, Just ResetKeys)
 

@@ -26,8 +26,8 @@ data AppAction
   = HandleKeyInput SDL.Keycode
   | MoveMousePosition (Int, Int)
   | ResetKeys
-  | TriggerLeftClick
-  | ChainLeftClick
+  | TriggerMouseClick MouseButtonType
+  | ChainMouseClick MouseButtonType
   | IncrementMouseCursor (Int, Int)
   | ShutdownApp
   | UpdateShiftState Bool
@@ -39,14 +39,6 @@ data DrawContext = DrawContext
     ctxFont :: TTF.Font,
     ctxX11Display :: X11.Display
   }
-
-type Update state appAction = state -> appAction -> IO (state, Maybe appAction)
-
-type EventHandler state appAction = state -> SDL.Event -> Maybe appAction
-
-type View state = state -> IO ()
-
-type Initializer state = IO state
 
 data MouseButtonType = LeftClick
   deriving (Show, Eq)
