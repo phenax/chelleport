@@ -35,7 +35,7 @@ colorFineGrainGrid :: Color
 colorFineGrainGrid = SDL.V4 55 52 65 100
 
 windowOpacity :: CFloat
-windowOpacity = 0.4
+windowOpacity = 0.5
 
 fontSize :: Int
 fontSize = 24

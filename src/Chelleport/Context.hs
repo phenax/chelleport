@@ -7,7 +7,6 @@ import Chelleport.Config
 import Chelleport.Types
 import Data.ByteString (ByteString)
 import Data.FileEmbed (embedFileRelative)
-import Foreign.C (CFloat)
 import qualified Graphics.X11 as X11
 import SDL (($=))
 import qualified SDL

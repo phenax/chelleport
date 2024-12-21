@@ -14,6 +14,7 @@ test = do
             stateIsShiftPressed = False,
             stateIsMatched = False,
             stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]],
+            stateRepetition = 1,
             stateIsDragging = False
           }
   let drawTextCalls = filter (\case CallDrawText {} -> True; _ -> False) . calls

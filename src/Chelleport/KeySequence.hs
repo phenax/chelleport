@@ -3,8 +3,9 @@ module Chelleport.KeySequence where
 import Chelleport.Types (KeyGrid, KeySequence)
 import Chelleport.Utils (findWithIndex, uniq)
 import Control.Monad (guard)
-import Data.List (isPrefixOf)
+import Data.List (elemIndex, isPrefixOf)
 import qualified Data.Map as Map
+import Data.Maybe (fromMaybe, isJust)
 import qualified SDL
 
 nextChars :: KeySequence -> KeyGrid -> Maybe [Char]
@@ -23,7 +24,7 @@ findMatchPosition keySequence = findWithIndex searchRows 0
     searchInRow = guard . (== keySequence)
 
 isValidKey :: SDL.Keycode -> Bool
-isValidKey = (`Map.member` keycodeMapping)
+isValidKey = (`Map.member` keycodeCharMapping)
 
 -- Linear Congruential Generator
 lcg :: Int -> Int
@@ -51,10 +52,10 @@ generateGrid seed (rows, columns) hintKeys
       ]
 
 toKeyChar :: SDL.Keycode -> Maybe Char
-toKeyChar = (`Map.lookup` keycodeMapping)
+toKeyChar = (`Map.lookup` keycodeCharMapping)
 
-keycodeMapping :: Map.Map SDL.Keycode Char
-keycodeMapping =
+keycodeCharMapping :: Map.Map SDL.Keycode Char
+keycodeCharMapping =
   Map.fromList
     [ (SDL.KeycodeA, 'A'),
       (SDL.KeycodeB, 'B'),
@@ -81,15 +82,25 @@ keycodeMapping =
       (SDL.KeycodeW, 'W'),
       (SDL.KeycodeX, 'X'),
       (SDL.KeycodeY, 'Y'),
-      (SDL.KeycodeZ, 'Z'),
-      (SDL.Keycode0, '0'),
-      (SDL.Keycode1, '1'),
-      (SDL.Keycode2, '2'),
-      (SDL.Keycode3, '3'),
-      (SDL.Keycode4, '4'),
-      (SDL.Keycode5, '5'),
-      (SDL.Keycode6, '6'),
-      (SDL.Keycode7, '7'),
-      (SDL.Keycode8, '8'),
-      (SDL.Keycode9, '9')
+      (SDL.KeycodeZ, 'Z')
     ]
+
+keycodeToInt :: SDL.Keycode -> Maybe Int
+keycodeToInt = (`elemIndex` digitKeycodes)
+
+isKeycodeDigit :: SDL.Keycode -> Bool
+isKeycodeDigit = isJust . keycodeToInt
+
+digitKeycodes :: [SDL.Keycode]
+digitKeycodes =
+  [ SDL.Keycode0,
+    SDL.Keycode1,
+    SDL.Keycode2,
+    SDL.Keycode3,
+    SDL.Keycode4,
+    SDL.Keycode5,
+    SDL.Keycode6,
+    SDL.Keycode7,
+    SDL.Keycode8,
+    SDL.Keycode9
+  ]

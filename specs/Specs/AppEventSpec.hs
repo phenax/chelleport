@@ -86,7 +86,6 @@ test = do
       it "calls key input handler" $ do
         eventHandler (mkKeyboardEvent SDL.KeycodeA SDL.Pressed defaultMod) `shouldBe` Just (HandleKeyInput SDL.KeycodeA)
         eventHandler (mkKeyboardEvent SDL.KeycodeQ SDL.Pressed defaultMod) `shouldBe` Just (HandleKeyInput SDL.KeycodeQ)
-        eventHandler (mkKeyboardEvent SDL.Keycode9 SDL.Pressed defaultMod) `shouldBe` Just (HandleKeyInput SDL.Keycode9)
 
     context "when shift key is pressed" $ do
       it "enables shift" $ do
@@ -97,3 +96,8 @@ test = do
       it "disabled shift" $ do
         let action = eventHandler $ mkKeyboardEvent SDL.KeycodeRShift SDL.Released defaultMod
         action `shouldBe` Just (UpdateShiftState False)
+
+    context "when digit is pressed" $ do
+      it "sets repetition count" $ do
+        let action = eventHandler $ mkKeyboardEvent SDL.Keycode9 SDL.Pressed defaultMod
+        action `shouldBe` Just (UpdateRepetition 9)

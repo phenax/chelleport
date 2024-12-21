@@ -13,10 +13,11 @@ import Chelleport.Control
     withShift,
   )
 import Chelleport.Draw (MonadDraw (windowPosition), cellSize)
-import Chelleport.KeySequence (findMatchPosition, generateGrid, isValidKey, nextChars, toKeyChar)
+import Chelleport.KeySequence (findMatchPosition, generateGrid, isKeycodeDigit, isValidKey, keycodeToInt, nextChars, toKeyChar)
 import Chelleport.Types
 import Chelleport.Utils (intToCInt)
 import qualified Chelleport.View
+import Control.Monad (forM_)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader (ReaderT (runReaderT))
 import Data.Maybe (fromMaybe, isJust)
@@ -45,7 +46,8 @@ initialState = do
         stateKeySequence = [],
         stateIsMatched = False,
         stateIsShiftPressed = False,
-        stateIsDragging = False
+        stateIsDragging = False,
+        stateRepetition = 1
       }
   where
     rows = 9
@@ -63,6 +65,8 @@ eventHandler event =
           if withShift ev
             then Just $ ChainMouseClick RightClick
             else Just $ TriggerMouseClick RightClick
+      | isKeycodeDigit (eventToKeycode ev) ->
+          Just $ UpdateRepetition (fromMaybe 0 $ keycodeToInt $ eventToKeycode ev)
       | isKeyPressWith ev SDL.KeycodeSpace ->
           if withShift ev
             then Just $ ChainMouseClick LeftClick
@@ -105,8 +109,9 @@ update state (HandleKeyInput key) = do
 -- Move mouse incrementally
 update state (IncrementMouseCursor (incX, incY)) = do
   (curX, curY) <- getMousePointerPosition
-  moveMousePointer (curX + intToCInt incX) (curY + intToCInt incY)
-  pure (state, Nothing)
+  let count = intToCInt $ case stateRepetition state of 0 -> 1; n -> n
+  moveMousePointer (curX + count * intToCInt incX) (curY + count * intToCInt incY)
+  pure (state {stateRepetition = 1}, Nothing)
 
 -- Move mouse to given position
 update state (MoveMousePosition (row, col)) = do
@@ -123,20 +128,24 @@ update state (MoveMousePosition (row, col)) = do
 
 -- Reset entered key sequence and state
 update state ResetKeys = do
-  pure (state {stateKeySequence = [], stateIsMatched = False}, Nothing)
+  pure (state {stateKeySequence = [], stateIsMatched = False, stateRepetition = 1}, Nothing)
 
 -- Trigger click
 update state (TriggerMouseClick btn) = do
   hideWindow
-  clickMouseButton btn
-  pure (state, Just ShutdownApp)
+  let count = case stateRepetition state of 0 -> 1; n -> n
+  forM_ [1 .. count] $ \_ -> do
+    clickMouseButton btn
+  pure (state {stateRepetition = 1}, Just ShutdownApp)
 
 -- Chain clicks
 update state (ChainMouseClick btn) = do
   hideWindow
-  clickMouseButton btn
+  let count = case stateRepetition state of 0 -> 1; n -> n
+  forM_ [1 .. count] $ \_ -> do
+    clickMouseButton btn
   showWindow
-  pure (state, Just ResetKeys)
+  pure (state {stateRepetition = 1}, Just ResetKeys)
 
 -- Cleanup everything and exit
 update state ShutdownApp = do
@@ -146,21 +155,25 @@ update state ShutdownApp = do
 -- Mouse dragging
 update state MouseDragToggle
   | stateIsDragging state = pure (state {stateIsDragging = False}, Just MouseDragEnd)
-  | otherwise = pure (state {stateIsDragging = True}, Just MouseDragStart)
---
+  | otherwise = do pure (state {stateIsDragging = True}, Just MouseDragStart)
+
 -- Mouse button press
 update state MouseDragStart = do
   hideWindow
   pressMouseButton
   showWindow
-  pure (state, Nothing)
+  pure (state {stateRepetition = 1}, Nothing)
 
 -- Mouse button release
 update state MouseDragEnd = do
   hideWindow
   releaseMouseButton
   showWindow
-  pure (state, Nothing)
+  pure (state {stateRepetition = 1}, Nothing)
+
+-- Set/unset whether shift is pressed
+update state (UpdateRepetition count) = do
+  pure (state {stateRepetition = count}, Nothing)
 
 -- Set/unset whether shift is pressed
 update state (UpdateShiftState shift) =

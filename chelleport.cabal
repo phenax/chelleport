@@ -72,6 +72,7 @@ test-suite specs
   type: exitcode-stdio-1.0
   hs-source-dirs: specs
   main-is: Main.hs
+  ghc-options: -Wno-name-shadowing
   other-modules:
     Mock
     Specs.KeySequenceSpec

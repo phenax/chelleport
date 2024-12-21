@@ -19,7 +19,8 @@ data State = State
     stateKeySequence :: KeySequence,
     stateIsMatched :: Bool,
     stateIsShiftPressed :: Bool,
-    stateIsDragging :: Bool
+    stateIsDragging :: Bool,
+    stateRepetition :: Int
   }
   deriving (Show, Eq)
 
@@ -35,6 +36,7 @@ data AppAction
   | ShutdownApp
   | TriggerMouseClick MouseButtonType
   | UpdateShiftState Bool
+  | UpdateRepetition Int
   deriving (Show, Eq)
 
 data DrawContext = DrawContext
