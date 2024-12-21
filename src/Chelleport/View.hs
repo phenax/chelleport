@@ -1,4 +1,4 @@
-module Chelleport.View (render) where
+module Chelleport.View (render, renderKeySequence, renderGranularGrid, renderGridLines) where
 
 import Chelleport.Config
 import Chelleport.Draw
@@ -6,7 +6,6 @@ import Chelleport.Types
 import Chelleport.Utils (intToCInt, isEmpty, isNotEmpty)
 import Control.Monad (forM_, void, when)
 import Data.List (isPrefixOf, (\\))
-import Data.Maybe (isJust)
 import qualified Data.Text as Text
 import Foreign.C (CInt)
 
@@ -21,7 +20,9 @@ render state = do
     let px = colIndex * wcell + wcell `div` 2 - 20
     visible <- renderKeySequence (stateKeySequence state) cell (px, py)
     when visible $ do
-      renderTargetPoints state (rowIndex, colIndex)
+      renderTargetMarker state (rowIndex, colIndex)
+      when (stateIsMatched state) $ do
+        renderGranularGrid state (rowIndex, colIndex)
 
 renderKeySequence :: (MonadDraw m) => KeySequence -> Cell -> (CInt, CInt) -> m Bool
 renderKeySequence keySequence cell (px, py) = do
@@ -29,10 +30,10 @@ renderKeySequence keySequence cell (px, py) = do
         | keySequence `isPrefixOf` cell = splitAt (length keySequence) cell
         | otherwise = ("", cell)
 
-  let textColor
-        | isEmpty keySequence = Just colorWhite
-        | isNotEmpty matched = Just colorHighlight
-        | otherwise = Nothing
+  let (textColor, isVisible)
+        | isEmpty keySequence = (Just colorWhite, True)
+        | isNotEmpty matched = (Just colorHighlight, True)
+        | otherwise = (Nothing, False)
 
   previousTextWidth <-
     if isNotEmpty matched
@@ -41,11 +42,10 @@ renderKeySequence keySequence cell (px, py) = do
 
   when (isNotEmpty remaining) $ case textColor of
     Just color -> do
-      let pos = px + previousTextWidth
-      void $ drawText (pos, py) color $ Text.pack remaining
+      void $ drawText (px + previousTextWidth, py) color $ Text.pack remaining
     Nothing -> pure ()
 
-  pure (isJust textColor)
+  pure isVisible
 
 renderGridLines :: (MonadDraw m) => State -> m ()
 renderGridLines state = do
@@ -69,25 +69,30 @@ renderGridLines state = do
   drawHorizontalLine (rows * hcell `div` 2)
   drawVerticalLine (columns * wcell `div` 2)
 
-renderTargetPoints :: (MonadDraw m) => State -> (CInt, CInt) -> m ()
-renderTargetPoints state (row, col) = do
+renderTargetMarker :: (MonadDraw m) => State -> (CInt, CInt) -> m ()
+renderTargetMarker state (row, col) = do
   (wcell, hcell) <- cellSize state
   let (x, y) = (col * wcell + wcell `div` 2, row * hcell + hcell `div` 2)
   setDrawColor colorWhite
   drawCircle 2 (x, y)
-  when (stateIsMatched state) $ do
-    setDrawColor colorFineGrainGrid
-    forM_ ([-8 .. 8] \\ [0]) $ \n -> do
-      let px = x + n * wcell `div` 16
-      drawLine (px, y - hcell `div` 2) (px, y + hcell `div` 2)
-    forM_ ([-8 .. 8] \\ [0]) $ \n -> do
-      let py = y + n * hcell `div` 16
-      drawLine (x - wcell `div` 2, py) (x + wcell `div` 2, py)
 
-    setDrawColor colorLightGray
-    let lenx = wcell `div` 4
-    let leny = hcell `div` 4
-    drawLine (x - wcell `div` 4, y - leny) (x - wcell `div` 4, y + leny)
-    drawLine (x + wcell `div` 4, y - leny) (x + wcell `div` 4, y + leny)
-    drawLine (x - lenx, y - hcell `div` 4) (x + lenx, y - hcell `div` 4)
-    drawLine (x - lenx, y + hcell `div` 4) (x + lenx, y + hcell `div` 4)
+renderGranularGrid :: (MonadDraw m) => State -> (CInt, CInt) -> m ()
+renderGranularGrid state (row, col) = do
+  (wcell, hcell) <- cellSize state
+  let (x, y) = (col * wcell + wcell `div` 2, row * hcell + hcell `div` 2)
+
+  setDrawColor colorFineGrainGrid
+  forM_ ([-8 .. 8] \\ [0]) $ \n -> do
+    let px = x + n * wcell `div` 16
+    drawLine (px, y - hcell `div` 2) (px, y + hcell `div` 2)
+  forM_ ([-8 .. 8] \\ [0]) $ \n -> do
+    let py = y + n * hcell `div` 16
+    drawLine (x - wcell `div` 2, py) (x + wcell `div` 2, py)
+
+  setDrawColor colorLightGray
+  let lenx = wcell `div` 4
+  let leny = hcell `div` 4
+  drawLine (x - wcell `div` 4, y - leny) (x - wcell `div` 4, y + leny)
+  drawLine (x + wcell `div` 4, y - leny) (x + wcell `div` 4, y + leny)
+  drawLine (x - lenx, y - hcell `div` 4) (x + lenx, y - hcell `div` 4)
+  drawLine (x - lenx, y + hcell `div` 4) (x + lenx, y + hcell `div` 4)

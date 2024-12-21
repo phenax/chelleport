@@ -77,6 +77,7 @@ test-suite specs
     Specs.KeySequenceSpec
     Specs.AppStateUpdateSpec
     Specs.AppEventSpec
+    Specs.ViewSpec
   build-depends:
     lib-chelleport,
     hspec

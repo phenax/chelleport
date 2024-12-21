@@ -8,6 +8,7 @@ import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.State (MonadState (state), StateT (runStateT))
 import Data.Text (Text)
+import qualified Data.Text as Text
 import Foreign.C (CInt)
 import Test.Hspec
 
@@ -63,9 +64,12 @@ mockWindowOffsetX = 200
 mockWindowOffsetY :: CInt
 mockWindowOffsetY = 100
 
+mockTextWidth :: Int
+mockTextWidth = 10
+
 instance (MonadIO m) => MonadDraw (TestM m) where
   drawLine p1 p2 = registerMockCall $ CallDrawLine p1 p2
-  drawText p color text = (0, 0) <$ registerMockCall (CallDrawText p color text)
+  drawText p color text = (fromIntegral $ mockTextWidth * Text.length text, 0) <$ registerMockCall (CallDrawText p color text)
   drawCircle radius p = registerMockCall $ CallDrawCircle radius p
   setDrawColor color = registerMockCall $ CallSetDrawColor color
   windowSize = (mockWindowWidth, mockWindowHeight) <$ registerMockCall CallWindowSize
