@@ -25,7 +25,13 @@
           otherFiles = [
             { source = ./static; target = "static"; }
           ];
-          configurationFlags = [ "--ghc-options=-O2" ];
+          configurationFlags = [
+            "--ghc-options=-O2"
+          ];
+          buildInputs = with pkgs; [
+            xorg.libXtst
+            xorg.libX11
+          ];
         in {
           haskellProjects.default = {
             inherit projectRoot;
@@ -48,7 +54,7 @@
             };
 
             devShell = {
-              hlsCheck.enable = false;
+              hlsCheck.enable = true;
             };
 
             autoWire = [ "packages" "apps" "checks" ];
@@ -64,9 +70,10 @@
             packages = with pkgs; [
               just
               nodemon
-              xorg.libXtst
-              xorg.libX11
             ];
+            inherit buildInputs;
+
+            LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath buildInputs}";
           };
         };
     };
