@@ -25,6 +25,7 @@
           otherFiles = [
             { source = ./static; target = "static"; }
           ];
+          configurationFlags = [ "--ghc-options=-O2" ];
         in {
           haskellProjects.default = {
             inherit projectRoot;
@@ -32,20 +33,21 @@
             packages = {};
             settings = {
               chelleport = {
+                check = true;
                 deadCodeElimination = true;
                 staticLibraries = true;
-                # extraBuildFlags = ["+release"];
                 strip = true;
-                custom = drv: drv.overrideAttrs(old: {
-                  preBuild = ''
-                    ${toString (map (f: ''cp -r ${f.source} ${f.target};'') otherFiles)}
-                  '';
-                });
+                custom = drv:
+                  (pkgs.haskell.lib.compose.appendConfigureFlags configurationFlags drv).overrideAttrs (old: {
+                    preBuild = ''
+                      ${toString (map (f: ''cp -r ${f.source} ${f.target};'') otherFiles)}
+                    '';
+                  })
+                ;
               };
             };
 
             devShell = {
-              # tools = hp: { fourmolu = hp.fourmolu; ghcid = null; };
               hlsCheck.enable = false;
             };
 

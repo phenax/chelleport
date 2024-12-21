@@ -9,11 +9,6 @@ build-type:      Simple
 synopsis:        Mouse control
 description:     Mouse control
 
-Flag release
-  Description: Release build options
-  Manual: True
-  Default: False
-
 common common-config
   default-extensions:
     ExplicitForAll
@@ -32,6 +27,7 @@ common common-config
   build-depends:
     base,
     text,
+    time,
     mtl == 2.3.1,
     sdl2 == 2.5.5.0,
     containers
@@ -41,9 +37,7 @@ common warnings
     -Wall -Wincomplete-record-updates -Wincomplete-uni-patterns
     -Wunused-foralls -Wextra -Wno-unused-do-bind -Wname-shadowing
     -fwarn-tabs -fprint-explicit-foralls -fprint-explicit-kinds
-  extra-libraries: Xtst
-  if flag(release)
-    ghc-options: -O2 -Werror
+  extra-libraries: Xtst X11
 
 executable chelleport
   import: common-config, warnings

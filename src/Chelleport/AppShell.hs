@@ -24,6 +24,7 @@ instance (MonadIO m) => MonadAppShell (AppM m) where
     SDL.destroyRenderer $ ctxRenderer ctx
     SDL.destroyWindow $ ctxWindow ctx
     releaseMouseButton
+    SDL.quit
     liftIO $ do
       X11.closeDisplay $ ctxX11Display ctx
       exitSuccess

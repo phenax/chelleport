@@ -22,7 +22,7 @@ render state = do
     when visible $ do
       renderTargetPoints state (rowIndex, colIndex)
 
-renderKeySequence ::(MonadDraw m) => KeySequence -> Cell -> (CInt, CInt) -> m Bool
+renderKeySequence :: (MonadDraw m) => KeySequence -> Cell -> (CInt, CInt) -> m Bool
 renderKeySequence keySequence cell (px, py) = do
   let (matched, remaining)
         | keySequence `isPrefixOf` cell = splitAt (length keySequence) cell
@@ -33,9 +33,10 @@ renderKeySequence keySequence cell (px, py) = do
         | isNotEmpty matched = Just colorHighlight
         | otherwise = Nothing
 
-  previousTextWidth <- if isNotEmpty matched
-    then fst <$> drawText (px, py) colorLightGray (Text.pack matched)
-    else pure 0
+  previousTextWidth <-
+    if isNotEmpty matched
+      then fst <$> drawText (px, py) colorLightGray (Text.pack matched)
+      else pure 0
 
   when (isNotEmpty remaining) $ case textColor of
     Just color -> do
@@ -67,7 +68,7 @@ renderGridLines state = do
   drawHorizontalLine (rows * hcell `div` 2)
   drawVerticalLine (columns * wcell `div` 2)
 
-renderTargetPoints :: (MonadDraw m) =>State -> (CInt, CInt) -> m ()
+renderTargetPoints :: (MonadDraw m) => State -> (CInt, CInt) -> m ()
 renderTargetPoints state (row, col) = do
   (wcell, hcell) <- cellSize state
   let (x, y) = (col * wcell + wcell `div` 2, row * hcell + hcell `div` 2)
