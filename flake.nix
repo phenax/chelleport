@@ -62,6 +62,8 @@
             packages = with pkgs; [
               just
               nodemon
+              xorg.libXtst
+              xorg.libX11
             ];
           };
         };

@@ -12,16 +12,19 @@ import Foreign.C (CInt)
 import Test.Hspec
 
 data Call
-  = CallPressMouseButton MouseButtonType
-  | CallMoveMousePosition CInt CInt
-  | CallGetMousePointerPosition
-  | CallHideWindow
-  | CallShowWindow
-  | CallShutdownApp
+  = CallDrawCircle Int (CInt, CInt)
   | CallDrawLine (CInt, CInt) (CInt, CInt)
   | CallDrawText (CInt, CInt) Color Text
-  | CallDrawCircle Int (CInt, CInt)
+  | CallGetMousePointerPosition
+  | CallHideWindow
+  | CallMouseButtonDown
+  | CallMouseButtonUp
+  | CallMoveMousePosition CInt CInt
+  | CallPressMouseButton MouseButtonType
   | CallSetDrawColor Color
+  | CallShowWindow
+  | CallShutdownApp
+  | CallWindowPosition
   | CallWindowSize
   deriving (Show, Eq)
 
@@ -45,13 +48,28 @@ instance (MonadIO m) => MonadControl (TestM m) where
   pressMouseButton btn = registerMockCall $ CallPressMouseButton btn
   moveMousePointer x y = registerMockCall $ CallMoveMousePosition x y
   getMousePointerPosition = (42, 42) <$ registerMockCall CallGetMousePointerPosition
+  mouseButtonDown = registerMockCall CallMouseButtonDown
+  mouseButtonUp = registerMockCall CallMouseButtonUp
+
+mockWindowWidth :: CInt
+mockWindowWidth = 1920
+
+mockWindowHeight :: CInt
+mockWindowHeight = 1080
+
+mockWindowOffsetX :: CInt
+mockWindowOffsetX = 200
+
+mockWindowOffsetY :: CInt
+mockWindowOffsetY = 100
 
 instance (MonadIO m) => MonadDraw (TestM m) where
   drawLine p1 p2 = registerMockCall $ CallDrawLine p1 p2
   drawText p color text = (0, 0) <$ registerMockCall (CallDrawText p color text)
   drawCircle radius p = registerMockCall $ CallDrawCircle radius p
   setDrawColor color = registerMockCall $ CallSetDrawColor color
-  windowSize = 100 <$ registerMockCall CallWindowSize
+  windowSize = (mockWindowWidth, mockWindowHeight) <$ registerMockCall CallWindowSize
+  windowPosition = (mockWindowOffsetX, mockWindowOffsetY) <$ registerMockCall CallWindowPosition
 
 instance (MonadIO m) => MonadAppShell (TestM m) where
   hideWindow = registerMockCall CallHideWindow

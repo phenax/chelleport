@@ -2,7 +2,7 @@ module Specs.AppStateUpdateSpec where
 
 import Chelleport (initialState, update)
 import Chelleport.Types
-import Chelleport.Utils (uniq)
+import Chelleport.Utils (intToCInt, uniq)
 import Control.Monad (join)
 import Mock
 import qualified SDL
@@ -90,6 +90,8 @@ test = do
 
     context "with action MoveMousePosition" $ do
       let currentState = defaultState
+      let rows = intToCInt $ length $ stateGrid currentState
+      let columns = intToCInt $ length $ head $ stateGrid currentState
 
       -- TODO: Test with inline mocked values
       it "moves mouse pointer to center of cell of given coordinates" $ do
@@ -98,7 +100,10 @@ test = do
         --   [ CallPressMouseButton LeftClick `returns` (1, 2),
         --     CallHideWindow `returns` ()
         --   ]
-        mock `shouldHaveCalled` CallMoveMousePosition 25 25
+        mock
+          `shouldHaveCalled` CallMoveMousePosition
+            (mockWindowOffsetX + mockWindowWidth `div` columns `div` 2)
+            (mockWindowOffsetY + mockWindowHeight `div` rows `div` 2)
 
       it "does not continue or update state" $ do
         (result, _) <- runWithMocks $ update currentState $ MoveMousePosition (0, 0)

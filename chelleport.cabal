@@ -16,17 +16,17 @@ Flag release
 
 common common-config
   default-extensions:
-    ExplicitForAll,
-    FlexibleContexts,
-    FlexibleInstances,
-    GeneralizedNewtypeDeriving,
-    LambdaCase,
-    NamedFieldPuns,
-    NumericUnderscores,
-    OverloadedStrings,
-    QuasiQuotes,
-    TemplateHaskell,
-    TupleSections,
+    ExplicitForAll
+    FlexibleContexts
+    FlexibleInstances
+    GeneralizedNewtypeDeriving
+    LambdaCase
+    NamedFieldPuns
+    NumericUnderscores
+    OverloadedStrings
+    QuasiQuotes
+    TemplateHaskell
+    TupleSections
     UndecidableInstances
   default-language: Haskell2010
   build-depends:
@@ -41,6 +41,7 @@ common warnings
     -Wall -Wincomplete-record-updates -Wincomplete-uni-patterns
     -Wunused-foralls -Wextra -Wno-unused-do-bind -Wname-shadowing
     -fwarn-tabs -fprint-explicit-foralls -fprint-explicit-kinds
+  extra-libraries: Xtst
   if flag(release)
     ghc-options: -O2 -Werror
 
@@ -59,8 +60,7 @@ library lib-chelleport
     file-embed == 0.0.16.0,
     sdl2-ttf == 2.1.3,
     vector == 0.13.1.0,
-    X11 == 1.10.3,
-    xtest == 0.2
+    X11 == 1.10.3
   exposed-modules:
     Chelleport
     Chelleport.AppShell
@@ -84,5 +84,4 @@ test-suite specs
     Specs.AppEventSpec
   build-depends:
     lib-chelleport,
-    neat-interpolation,
     hspec

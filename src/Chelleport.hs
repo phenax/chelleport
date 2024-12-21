@@ -1,11 +1,9 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
-
 module Chelleport where
 
 import Chelleport.AppShell (MonadAppShell (hideWindow, showWindow, shutdownApp), setupAppShell)
 import Chelleport.Context (initializeContext)
-import Chelleport.Control (MonadControl (getMousePointerPosition, moveMousePointer, pressMouseButton), directionalIncrement, eventToKeycode, isKeyPressWith, isKeyPressed, isKeyReleaseWith, withShift)
-import Chelleport.Draw (MonadDraw, cellSize)
+import Chelleport.Control (MonadControl (getMousePointerPosition, mouseButtonDown, mouseButtonUp, moveMousePointer, pressMouseButton), directionalIncrement, eventToKeycode, isKeyPressWith, isKeyPressed, isKeyReleaseWith, withShift)
+import Chelleport.Draw (MonadDraw (windowPosition), cellSize)
 import Chelleport.KeySequence (findMatchPosition, generateGrid, isValidKey, nextChars, toKeyChar)
 import Chelleport.Types
 import Chelleport.Utils (intToCInt)
@@ -110,7 +108,8 @@ update state (MoveMousePosition (row, col)) = do
       (wcell, hcell) <- cellSize state
       let x = (wcell `div` 2) + wcell * intToCInt col
       let y = (hcell `div` 2) + hcell * intToCInt row
-      pure (x, y)
+      (winx, winy) <- windowPosition
+      pure (winx + x, winy + y)
 
 -- Reset entered key sequence and state
 update state ResetKeys = do

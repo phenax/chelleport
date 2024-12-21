@@ -16,7 +16,8 @@ class (Monad m) => MonadDraw m where
   drawText :: (CInt, CInt) -> SDL.V4 Word8 -> Text -> m (CInt, CInt)
   drawCircle :: Int -> (CInt, CInt) -> m ()
   setDrawColor :: SDL.V4 Word8 -> m ()
-  windowSize :: m (SDL.V2 CInt)
+  windowSize :: m (CInt, CInt)
+  windowPosition :: m (CInt, CInt)
 
 instance (MonadIO m) => MonadDraw (AppM m) where
   drawLine (x1, y1) (x2, y2) = do
@@ -56,23 +57,29 @@ instance (MonadIO m) => MonadDraw (AppM m) where
     let points = Vector.generate renderedPoints (SDL.P . toPointOnCircle)
     SDL.drawPoints renderer points
 
-  windowSize = ask >>= SDL.get . SDL.windowSize . ctxWindow
+  windowSize = do
+    SDL.V2 x y <- ask >>= SDL.get . SDL.windowSize . ctxWindow
+    pure (x, y)
+
+  windowPosition = do
+    SDL.V2 x y <- ask >>= SDL.getWindowAbsolutePosition . ctxWindow
+    pure (x, y)
 
 cellSize :: (MonadDraw m) => State -> m (CInt, CInt)
 cellSize (State {stateGrid}) = do
-  (SDL.V2 width height) <- windowSize
+  (width, height) <- windowSize
   let wcell = width `div` intToCInt (length $ head stateGrid)
   let hcell = height `div` intToCInt (length stateGrid)
   pure (wcell, hcell)
 
 drawHorizontalLine :: (MonadDraw m) => CInt -> m ()
 drawHorizontalLine y = do
-  (SDL.V2 width _) <- windowSize
+  (width, _) <- windowSize
   drawLine (0, y) (width, y)
 
 drawVerticalLine :: (MonadDraw m) => CInt -> m ()
 drawVerticalLine x = do
-  (SDL.V2 _width height) <- windowSize
+  (_, height) <- windowSize
   drawLine (x, 0) (x, height)
 
 colorWhite :: SDL.V4 Word8

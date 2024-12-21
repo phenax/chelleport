@@ -3,39 +3,65 @@ module Chelleport.Control where
 import Chelleport.Types
 import Chelleport.Utils (cIntToInt)
 import Control.Concurrent (threadDelay)
+import Control.Monad (unless)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.Reader (MonadReader (ask))
-import Foreign.C (CInt)
+import qualified Debug.Trace as Debug
+import Foreign.C.Types
 import qualified Graphics.X11 as X11
-import qualified Graphics.X11.XTest as X11
 import qualified SDL
 
 class (Monad m) => MonadControl m where
   pressMouseButton :: MouseButtonType -> m ()
   moveMousePointer :: CInt -> CInt -> m ()
+  mouseButtonDown :: m ()
+  mouseButtonUp :: m ()
   getMousePointerPosition :: m (CInt, CInt)
+
+foreign import ccall unsafe "X11/extensions/XTest.h XTestFakeButtonEvent"
+  xSimulateButtonEvent :: X11.Display -> X11.Button -> Bool -> X11.Time -> IO X11.Status
+
+-- Wrap with delay to prevent async window close issues
+withDelay :: (MonadIO m) => m () -> m ()
+withDelay act = delay >> act >> delay
+  where
+    delay = liftIO (threadDelay 20_000)
 
 instance (MonadIO m) => MonadControl (AppM m) where
   pressMouseButton btn = do
     (DrawContext {ctxX11Display = display}) <- ask
-    liftIO $ do
-      -- Wrap with delay to prevent async window close issues. TODO: Remove maybe?
-      threadDelay 20_000
-      X11.fakeButtonPress display x11Button
+    withDelay . liftIO $ do
+      xSimulateButtonEvent display x11Button True 0
+      xSimulateButtonEvent display x11Button False 0
       X11.sync display False
-      threadDelay 20_000
     where
       x11Button = case btn of
         LeftClick -> X11.button1
         RightClick -> X11.button3
 
   moveMousePointer x y = do
-    DrawContext {ctxWindow = window} <- ask
-    SDL.warpMouse (SDL.WarpInWindow window) (SDL.P $ SDL.V2 x y)
+    SDL.warpMouse SDL.WarpGlobal (SDL.P $ SDL.V2 x y)
 
   getMousePointerPosition = do
-    (SDL.P (SDL.V2 x y)) <- SDL.getAbsoluteMouseLocation
-    pure (x, y)
+    DrawContext {ctxX11Display = display} <- ask
+    liftIO $ do
+      win <- X11.rootWindow display $ X11.defaultScreen display
+      (success, _, _, x, y, _, _, _) <- X11.queryPointer display win
+      unless success $ do
+        Debug.traceM "ERROR: Cant query pointer"
+      pure (x, y)
+
+  mouseButtonDown = do
+    (DrawContext {ctxX11Display = display}) <- ask
+    withDelay . liftIO $ do
+      xSimulateButtonEvent display X11.button1 True 0
+      X11.sync display False
+
+  mouseButtonUp = do
+    (DrawContext {ctxX11Display = display}) <- ask
+    withDelay . liftIO $ do
+      xSimulateButtonEvent display X11.button1 False 0
+      X11.sync display False
 
 isKeyPressed :: SDL.KeyboardEventData -> Bool
 isKeyPressed = (== SDL.Pressed) . SDL.keyboardEventKeyMotion

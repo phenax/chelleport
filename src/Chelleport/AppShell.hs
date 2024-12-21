@@ -1,5 +1,6 @@
 module Chelleport.AppShell (setupAppShell, MonadAppShell (..)) where
 
+import Chelleport.Control (MonadControl (mouseButtonUp))
 import Chelleport.Draw (colorBackground)
 import Chelleport.Types
 import Control.Monad (foldM)
@@ -22,6 +23,7 @@ instance (MonadIO m) => MonadAppShell (AppM m) where
     ctx <- ask
     SDL.destroyRenderer $ ctxRenderer ctx
     SDL.destroyWindow $ ctxWindow ctx
+    mouseButtonUp
     liftIO $ do
       X11.closeDisplay $ ctxX11Display ctx
       exitSuccess
