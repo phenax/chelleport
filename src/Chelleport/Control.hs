@@ -12,25 +12,25 @@ import qualified Graphics.X11 as X11
 import qualified SDL
 
 class (Monad m) => MonadControl m where
-  pressMouseButton :: MouseButtonType -> m ()
+  clickMouseButton :: MouseButtonType -> m ()
   moveMousePointer :: CInt -> CInt -> m ()
-  mouseButtonDown :: m ()
-  mouseButtonUp :: m ()
+  pressMouseButton :: m ()
+  releaseMouseButton :: m ()
   getMousePointerPosition :: m (CInt, CInt)
 
 foreign import ccall unsafe "X11/extensions/XTest.h XTestFakeButtonEvent"
   xSimulateButtonEvent :: X11.Display -> X11.Button -> Bool -> X11.Time -> IO X11.Status
 
 -- Wrap with delay to prevent async window close issues
-withDelay :: (MonadIO m) => m () -> m ()
-withDelay act = delay >> act >> delay
+withInteractionDelay :: (MonadIO m) => m () -> m ()
+withInteractionDelay act = delay >> act >> delay
   where
     delay = liftIO (threadDelay 20_000)
 
 instance (MonadIO m) => MonadControl (AppM m) where
-  pressMouseButton btn = do
+  clickMouseButton btn = do
     (DrawContext {ctxX11Display = display}) <- ask
-    withDelay . liftIO $ do
+    withInteractionDelay . liftIO $ do
       xSimulateButtonEvent display x11Button True 0
       xSimulateButtonEvent display x11Button False 0
       X11.sync display False
@@ -51,15 +51,15 @@ instance (MonadIO m) => MonadControl (AppM m) where
         Debug.traceM "ERROR: Cant query pointer"
       pure (x, y)
 
-  mouseButtonDown = do
+  pressMouseButton = do
     (DrawContext {ctxX11Display = display}) <- ask
-    withDelay . liftIO $ do
+    withInteractionDelay . liftIO $ do
       xSimulateButtonEvent display X11.button1 True 0
       X11.sync display False
 
-  mouseButtonUp = do
+  releaseMouseButton = do
     (DrawContext {ctxX11Display = display}) <- ask
-    withDelay . liftIO $ do
+    withInteractionDelay . liftIO $ do
       xSimulateButtonEvent display X11.button1 False 0
       X11.sync display False
 
@@ -82,6 +82,11 @@ isKeyReleaseWith keyboardEvent keyCode =
 
 withShift :: SDL.KeyboardEventData -> Bool
 withShift event = SDL.keyModifierLeftShift modifier || SDL.keyModifierRightShift modifier
+  where
+    modifier = SDL.keysymModifier . SDL.keyboardEventKeysym $ event
+
+withCtrl :: SDL.KeyboardEventData -> Bool
+withCtrl event = SDL.keyModifierLeftCtrl modifier || SDL.keyModifierRightCtrl modifier
   where
     modifier = SDL.keysymModifier . SDL.keyboardEventKeysym $ event
 

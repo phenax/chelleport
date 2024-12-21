@@ -17,10 +17,10 @@ data Call
   | CallDrawText (CInt, CInt) Color Text
   | CallGetMousePointerPosition
   | CallHideWindow
-  | CallMouseButtonDown
-  | CallMouseButtonUp
+  | CallPressMouseButton
+  | CallReleaseMouseButton
   | CallMoveMousePosition CInt CInt
-  | CallPressMouseButton MouseButtonType
+  | CallClickMouseButton MouseButtonType
   | CallSetDrawColor Color
   | CallShowWindow
   | CallShutdownApp
@@ -45,11 +45,11 @@ newtype TestM m a = TestM {runTestM :: StateT MockCalls m a}
   deriving (Functor, Applicative, Monad, MonadIO, MonadState MockCalls)
 
 instance (MonadIO m) => MonadControl (TestM m) where
-  pressMouseButton btn = registerMockCall $ CallPressMouseButton btn
+  clickMouseButton btn = registerMockCall $ CallClickMouseButton btn
   moveMousePointer x y = registerMockCall $ CallMoveMousePosition x y
   getMousePointerPosition = (42, 42) <$ registerMockCall CallGetMousePointerPosition
-  mouseButtonDown = registerMockCall CallMouseButtonDown
-  mouseButtonUp = registerMockCall CallMouseButtonUp
+  pressMouseButton = registerMockCall CallPressMouseButton
+  releaseMouseButton = registerMockCall CallReleaseMouseButton
 
 mockWindowWidth :: CInt
 mockWindowWidth = 1920

@@ -33,7 +33,8 @@ test = do
             { stateKeySequence = [],
               stateIsShiftPressed = False,
               stateIsMatched = False,
-              stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]]
+              stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]],
+              stateIsDragging = False
             }
 
     context "with action HandleKeyInput" $ do
@@ -69,7 +70,7 @@ test = do
 
       it "hides window and triggers mouse click" $ do
         (_, mock) <- runWithMocks $ update currentState $ TriggerMouseClick LeftClick
-        calls mock `shouldContain` [CallHideWindow, CallPressMouseButton LeftClick]
+        calls mock `shouldContain` [CallHideWindow, CallClickMouseButton LeftClick]
 
       it "continues with action ShutdownApp without updating state" $ do
         ((nextState, action), _) <- runWithMocks $ update currentState $ TriggerMouseClick LeftClick
@@ -81,12 +82,57 @@ test = do
 
       it "hides window, triggers mouse click and shows the window again" $ do
         (_, mock) <- runWithMocks $ update currentState $ ChainMouseClick LeftClick
-        calls mock `shouldBe` [CallHideWindow, CallPressMouseButton LeftClick, CallShowWindow]
+        calls mock `shouldBe` [CallHideWindow, CallClickMouseButton LeftClick, CallShowWindow]
 
       it "continues with action ResetKeys without updating state" $ do
         ((nextState, action), _) <- runWithMocks $ update currentState $ ChainMouseClick LeftClick
         action `shouldBe` Just ResetKeys
         nextState `shouldBe` currentState
+
+    context "with action MouseDragToggle" $ do
+      context "when is dragging is true" $ do
+        let currentState = defaultState {stateIsDragging = True}
+
+        it "toggles dragging state" $ do
+          ((state, _), _) <- runWithMocks $ update currentState MouseDragToggle
+          state `shouldBe` state {stateIsDragging = False}
+
+        it "continues with action MouseDragEnd" $ do
+          ((_, action), _) <- runWithMocks $ update currentState MouseDragToggle
+          action `shouldBe` Just MouseDragEnd
+
+      context "when is dragging is false" $ do
+        let currentState = defaultState {stateIsDragging = False}
+
+        it "toggles dragging state" $ do
+          ((state, _), _) <- runWithMocks $ update currentState MouseDragToggle
+          state `shouldBe` state {stateIsDragging = True}
+
+        it "continues with action MouseDragStart" $ do
+          ((_, action), _) <- runWithMocks $ update currentState MouseDragToggle
+          action `shouldBe` Just MouseDragStart
+
+    context "with action MouseDragStart" $ do
+      let currentState = defaultState
+
+      it "hides window, starts dragging and shows the window again" $ do
+        (_, mock) <- runWithMocks $ update currentState MouseDragStart
+        calls mock `shouldContain` [CallHideWindow, CallPressMouseButton, CallShowWindow]
+
+      it "does not continue or update state" $ do
+        (result, _) <- runWithMocks $ update currentState MouseDragStart
+        result `shouldBe` (currentState, Nothing)
+
+    context "with action MouseDragEnd" $ do
+      let currentState = defaultState
+
+      it "hides window, stops dragging and shows the window again" $ do
+        (_, mock) <- runWithMocks $ update currentState MouseDragEnd
+        calls mock `shouldContain` [CallHideWindow, CallReleaseMouseButton, CallShowWindow]
+
+      it "does not continue or update state" $ do
+        (result, _) <- runWithMocks $ update currentState MouseDragStart
+        result `shouldBe` (currentState, Nothing)
 
     context "with action MoveMousePosition" $ do
       let currentState = defaultState
@@ -97,7 +143,7 @@ test = do
       it "moves mouse pointer to center of cell of given coordinates" $ do
         (_, mock) <- runWithMocks $ update currentState $ MoveMousePosition (0, 0)
         -- handleMocks
-        --   [ CallPressMouseButton LeftClick `returns` (1, 2),
+        --   [ CallClickMouseButton LeftClick `returns` (1, 2),
         --     CallHideWindow `returns` ()
         --   ]
         mock

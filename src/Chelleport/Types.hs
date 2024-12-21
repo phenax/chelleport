@@ -18,18 +18,22 @@ data State = State
   { stateGrid :: KeyGrid,
     stateKeySequence :: KeySequence,
     stateIsMatched :: Bool,
-    stateIsShiftPressed :: Bool
+    stateIsShiftPressed :: Bool,
+    stateIsDragging :: Bool
   }
   deriving (Show, Eq)
 
 data AppAction
-  = HandleKeyInput SDL.Keycode
+  = ChainMouseClick MouseButtonType
+  | HandleKeyInput SDL.Keycode
+  | IncrementMouseCursor (Int, Int)
+  | MouseDragStart
+  | MouseDragEnd
+  | MouseDragToggle
   | MoveMousePosition (Int, Int)
   | ResetKeys
-  | TriggerMouseClick MouseButtonType
-  | ChainMouseClick MouseButtonType
-  | IncrementMouseCursor (Int, Int)
   | ShutdownApp
+  | TriggerMouseClick MouseButtonType
   | UpdateShiftState Bool
   deriving (Show, Eq)
 

@@ -2,7 +2,16 @@ module Chelleport where
 
 import Chelleport.AppShell (MonadAppShell (hideWindow, showWindow, shutdownApp), setupAppShell)
 import Chelleport.Context (initializeContext)
-import Chelleport.Control (MonadControl (getMousePointerPosition, mouseButtonDown, mouseButtonUp, moveMousePointer, pressMouseButton), directionalIncrement, eventToKeycode, isKeyPressWith, isKeyPressed, isKeyReleaseWith, withShift)
+import Chelleport.Control
+  ( MonadControl (clickMouseButton, getMousePointerPosition, moveMousePointer, pressMouseButton, releaseMouseButton),
+    directionalIncrement,
+    eventToKeycode,
+    isKeyPressWith,
+    isKeyPressed,
+    isKeyReleaseWith,
+    withCtrl,
+    withShift,
+  )
 import Chelleport.Draw (MonadDraw (windowPosition), cellSize)
 import Chelleport.KeySequence (findMatchPosition, generateGrid, isValidKey, nextChars, toKeyChar)
 import Chelleport.Types
@@ -13,11 +22,7 @@ import Control.Monad.Reader (ReaderT (runReaderT))
 import Data.Maybe (fromMaybe, isJust)
 import qualified SDL
 
-runEff ::
-  (MonadIO m) =>
-  DrawContext ->
-  AppM m x ->
-  m x
+runEff :: (MonadIO m) => DrawContext -> AppM m x -> m x
 runEff ctx action = runReaderT (runAppM action) ctx
 
 run :: IO ()
@@ -38,7 +43,8 @@ initialState = do
       { stateGrid = cells,
         stateKeySequence = [],
         stateIsMatched = False,
-        stateIsShiftPressed = False
+        stateIsShiftPressed = False,
+        stateIsDragging = False
       }
   where
     rows = 9
@@ -50,7 +56,8 @@ eventHandler event =
   case SDL.eventPayload event of
     SDL.QuitEvent -> Just ShutdownApp
     SDL.KeyboardEvent ev
-      | isKeyPressWith ev SDL.KeycodeEscape -> Just ShutdownApp
+      | isKeyPressWith ev SDL.KeycodeEscape ->
+          Just ShutdownApp
       | isKeyPressWith ev SDL.KeycodeMinus || isKeyPressWith ev SDL.KeycodeUnderscore ->
           if withShift ev
             then Just $ ChainMouseClick RightClick
@@ -61,6 +68,8 @@ eventHandler event =
             else Just $ TriggerMouseClick LeftClick
       | isKeyPressWith ev SDL.KeycodeTab || isKeyPressWith ev SDL.KeycodeBackspace ->
           Just ResetKeys
+      | withCtrl ev && isKeyPressWith ev SDL.KeycodeV ->
+          Just MouseDragToggle
       | isKeyPressed ev && isValidKey (eventToKeycode ev) ->
           Just $ HandleKeyInput $ eventToKeycode ev
       | isKeyPressWith ev SDL.KeycodeLShift || isKeyPressWith ev SDL.KeycodeRShift ->
@@ -118,19 +127,38 @@ update state ResetKeys = do
 -- Trigger click
 update state (TriggerMouseClick btn) = do
   hideWindow
-  pressMouseButton btn
+  clickMouseButton btn
   pure (state, Just ShutdownApp)
 
 -- Chain clicks
 update state (ChainMouseClick btn) = do
   hideWindow
-  pressMouseButton btn
+  clickMouseButton btn
   showWindow
   pure (state, Just ResetKeys)
 
 -- Cleanup everything and exit
 update state ShutdownApp = do
   shutdownApp
+  pure (state, Nothing)
+
+-- Mouse dragging
+update state MouseDragToggle
+  | stateIsDragging state = pure (state {stateIsDragging = False}, Just MouseDragEnd)
+  | otherwise = pure (state {stateIsDragging = True}, Just MouseDragStart)
+--
+-- Mouse button press
+update state MouseDragStart = do
+  hideWindow
+  pressMouseButton
+  showWindow
+  pure (state, Nothing)
+
+-- Mouse button release
+update state MouseDragEnd = do
+  hideWindow
+  releaseMouseButton
+  showWindow
   pure (state, Nothing)
 
 -- Set/unset whether shift is pressed
