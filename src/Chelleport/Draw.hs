@@ -2,10 +2,9 @@ module Chelleport.Draw where
 
 import Chelleport.Types
 import Chelleport.Utils (intToCInt)
-import Control.Monad.Reader (MonadIO, MonadReader (ask))
+import Control.Monad.Reader (MonadIO, MonadReader (ask), asks)
 import Data.Text (Text)
 import qualified Data.Vector.Storable as Vector
-import Data.Word (Word8)
 import Foreign.C (CInt)
 import SDL (($=))
 import qualified SDL
@@ -13,19 +12,19 @@ import qualified SDL.Font as TTF
 
 class (Monad m) => MonadDraw m where
   drawLine :: (CInt, CInt) -> (CInt, CInt) -> m ()
-  drawText :: (CInt, CInt) -> SDL.V4 Word8 -> Text -> m (CInt, CInt)
+  drawText :: (CInt, CInt) -> Color -> Text -> m (CInt, CInt)
   drawCircle :: Int -> (CInt, CInt) -> m ()
-  setDrawColor :: SDL.V4 Word8 -> m ()
+  setDrawColor :: Color -> m ()
   windowSize :: m (CInt, CInt)
   windowPosition :: m (CInt, CInt)
 
 instance (MonadIO m) => MonadDraw (AppM m) where
   drawLine (x1, y1) (x2, y2) = do
-    DrawContext {ctxRenderer = renderer} <- ask
+    renderer <- asks ctxRenderer
     SDL.drawLine renderer (SDL.P $ SDL.V2 x1 y1) (SDL.P $ SDL.V2 x2 y2)
 
   setDrawColor color = do
-    DrawContext {ctxRenderer = renderer} <- ask
+    renderer <- asks ctxRenderer
     SDL.rendererDrawColor renderer $= color
 
   drawText (x, y) color text = do
@@ -47,22 +46,23 @@ instance (MonadIO m) => MonadDraw (AppM m) where
     pure (textWidth, textHeight)
 
   drawCircle radius (x, y) = do
-    DrawContext {ctxRenderer = renderer} <- ask
-    let renderedPoints = radius * 7
-    let toTheta n = fromIntegral n * (2 * pi) / fromIntegral renderedPoints
-    let toPointOnCircle n =
-          SDL.V2
-            (x + round ((fromIntegral radius :: Float) * cos (toTheta n)))
-            (y + round ((fromIntegral radius :: Float) * sin (toTheta n)))
-    let points = Vector.generate renderedPoints (SDL.P . toPointOnCircle)
-    SDL.drawPoints renderer points
+    renderer <- asks ctxRenderer
+    SDL.drawPoints renderer pointsOnACircle
+    where
+      pointsOnACircle = Vector.generate renderedPoints (SDL.P . toPointOnCircle)
+      renderedPoints = radius * 7
+      toTheta n = fromIntegral n * (2 * pi) / fromIntegral renderedPoints
+      toPointOnCircle n =
+        SDL.V2
+          (x + round ((fromIntegral radius :: Float) * cos (toTheta n)))
+          (y + round ((fromIntegral radius :: Float) * sin (toTheta n)))
 
   windowSize = do
-    SDL.V2 x y <- ask >>= SDL.get . SDL.windowSize . ctxWindow
+    SDL.V2 x y <- asks ctxWindow >>= SDL.get . SDL.windowSize
     pure (x, y)
 
   windowPosition = do
-    SDL.V2 x y <- ask >>= SDL.getWindowAbsolutePosition . ctxWindow
+    SDL.V2 x y <- asks ctxWindow >>= SDL.getWindowAbsolutePosition
     pure (x, y)
 
 cellSize :: (MonadDraw m) => State -> m (CInt, CInt)
@@ -81,33 +81,3 @@ drawVerticalLine :: (MonadDraw m) => CInt -> m ()
 drawVerticalLine x = do
   (_, height) <- windowSize
   drawLine (x, 0) (x, height)
-
-colorWhite :: SDL.V4 Word8
-colorWhite = SDL.V4 255 255 255 255
-
-colorLightGray :: SDL.V4 Word8
-colorLightGray = SDL.V4 100 100 100 255
-
-colorGray :: SDL.V4 Word8
-colorGray = SDL.V4 55 52 65 200
-
-colorAccent :: SDL.V4 Word8
-colorAccent = SDL.V4 110 112 247 255
-
-colorHighlight :: SDL.V4 Word8
-colorHighlight = colorAccent
-
-colorGridLines :: SDL.V4 Word8
-colorGridLines = colorGray
-
-colorFocusLines :: SDL.V4 Word8
-colorFocusLines = colorLightGray
-
-colorAxisLines :: SDL.V4 Word8
-colorAxisLines = colorAccent
-
-colorBackground :: SDL.V4 Word8
-colorBackground = SDL.V4 15 12 25 0
-
-colorFineGrainGrid :: SDL.V4 Word8
-colorFineGrainGrid = SDL.V4 55 52 65 100

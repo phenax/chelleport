@@ -80,15 +80,14 @@ isKeyReleaseWith :: SDL.KeyboardEventData -> SDL.Keycode -> Bool
 isKeyReleaseWith keyboardEvent keyCode =
   isKeyRelease keyboardEvent && eventToKeycode keyboardEvent == keyCode
 
+keyModifier :: SDL.KeyboardEventData -> SDL.KeyModifier
+keyModifier = SDL.keysymModifier . SDL.keyboardEventKeysym
+
 withShift :: SDL.KeyboardEventData -> Bool
-withShift event = SDL.keyModifierLeftShift modifier || SDL.keyModifierRightShift modifier
-  where
-    modifier = SDL.keysymModifier . SDL.keyboardEventKeysym $ event
+withShift ev = SDL.keyModifierLeftShift (keyModifier ev) || SDL.keyModifierRightShift (keyModifier ev)
 
 withCtrl :: SDL.KeyboardEventData -> Bool
-withCtrl event = SDL.keyModifierLeftCtrl modifier || SDL.keyModifierRightCtrl modifier
-  where
-    modifier = SDL.keysymModifier . SDL.keyboardEventKeysym $ event
+withCtrl ev = SDL.keyModifierLeftCtrl (keyModifier ev) || SDL.keyModifierRightCtrl (keyModifier ev)
 
 directionalIncrement :: (CInt, CInt) -> Char -> (Int, Int)
 directionalIncrement (incX, incY) = \case

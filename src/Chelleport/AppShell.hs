@@ -1,11 +1,11 @@
 module Chelleport.AppShell (setupAppShell, MonadAppShell (..)) where
 
+import Chelleport.Config
 import Chelleport.Control (MonadControl (releaseMouseButton))
-import Chelleport.Draw (colorBackground)
 import Chelleport.Types
 import Control.Monad (foldM)
 import Control.Monad.IO.Class (MonadIO (liftIO))
-import Control.Monad.RWS (MonadReader (ask))
+import Control.Monad.RWS (MonadReader (ask), asks)
 import qualified Graphics.X11 as X11
 import SDL (($=))
 import qualified SDL
@@ -17,45 +17,44 @@ class (Monad m) => MonadAppShell m where
   shutdownApp :: m ()
 
 instance (MonadIO m) => MonadAppShell (AppM m) where
-  hideWindow = ask >>= SDL.hideWindow . ctxWindow
-  showWindow = ask >>= SDL.showWindow . ctxWindow
+  hideWindow = asks ctxWindow >>= SDL.hideWindow
+  showWindow = asks ctxWindow >>= SDL.showWindow
   shutdownApp = do
-    ctx <- ask
-    SDL.destroyRenderer $ ctxRenderer ctx
-    SDL.destroyWindow $ ctxWindow ctx
+    DrawContext {ctxRenderer = renderer, ctxWindow = window, ctxX11Display = x11Display} <- ask
+    SDL.destroyRenderer renderer
+    SDL.destroyWindow window
     releaseMouseButton
     SDL.quit
     liftIO $ do
-      X11.closeDisplay $ ctxX11Display ctx
+      X11.closeDisplay x11Display
       exitSuccess
 
-type Update state appAction = state -> appAction -> IO (state, Maybe appAction)
+type Update m state appAction = state -> appAction -> m (state, Maybe appAction)
 
 type EventHandler state appAction = state -> SDL.Event -> Maybe appAction
 
-type View state = state -> IO ()
+type View m state = state -> m ()
 
-type Initializer state = IO state
+type Initializer m state = m state
 
 setupAppShell ::
+  (MonadIO m) =>
   DrawContext ->
-  Initializer state ->
-  Update state appAction ->
+  Initializer m state ->
+  Update m state appAction ->
   EventHandler state appAction ->
-  View state ->
-  IO ()
-setupAppShell ctx initState update eventHandler draw = do
-  state <- initState
-  appLoop state
+  View m state ->
+  m ()
+setupAppShell (DrawContext {ctxRenderer = renderer}) getInitState update eventHandler draw =
+  getInitState >>= appLoop
   where
-    appLoop state = do
-      SDL.rendererDrawColor (ctxRenderer ctx) $= colorBackground
-      SDL.clear $ ctxRenderer ctx
-      draw state
-      SDL.present $ ctxRenderer ctx
+    appLoop currentState = do
+      SDL.rendererDrawColor renderer $= colorBackground
+      SDL.clear renderer
+      draw currentState
+      SDL.present renderer
 
-      events <- SDL.pollEvents
-      newState <- foldM evaluateEvent state events
+      newState <- SDL.pollEvents >>= foldM evaluateEvent currentState
 
       appLoop newState
 

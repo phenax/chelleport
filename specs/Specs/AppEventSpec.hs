@@ -37,6 +37,11 @@ test = do
         let action = eventHandler $ mkKeyboardEvent SDL.KeycodeEscape SDL.Pressed defaultMod
         action `shouldBe` Just ShutdownApp
 
+    context "when ctrl+v is pressed" $ do
+      it "toggles dragging" $ do
+        let action = eventHandler $ mkKeyboardEvent SDL.KeycodeV SDL.Pressed (defaultMod {SDL.keyModifierLeftCtrl = True})
+        action `shouldBe` Just MouseDragToggle
+
     context "when space key is pressed" $ do
       it "triggers left mouse button click" $ do
         let action = eventHandler $ mkKeyboardEvent SDL.KeycodeSpace SDL.Pressed defaultMod

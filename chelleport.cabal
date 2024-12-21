@@ -58,6 +58,7 @@ library lib-chelleport
   exposed-modules:
     Chelleport
     Chelleport.AppShell
+    Chelleport.Config
     Chelleport.Context
     Chelleport.Control
     Chelleport.Draw

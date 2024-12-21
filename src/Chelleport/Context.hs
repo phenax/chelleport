@@ -1,21 +1,17 @@
 module Chelleport.Context (initializeContext) where
 
+-- import Data.Time.Clock.System
+-- import qualified Debug.Trace as Debug
+
+import Chelleport.Config
 import Chelleport.Types
 import Data.ByteString (ByteString)
 import Data.FileEmbed (embedFileRelative)
--- import Data.Time.Clock.System
--- import qualified Debug.Trace as Debug
 import Foreign.C (CFloat)
 import qualified Graphics.X11 as X11
 import SDL (($=))
 import qualified SDL
 import qualified SDL.Font as TTF
-
-windowOpacity :: CFloat
-windowOpacity = 0.5
-
-fontSize :: Int
-fontSize = 24
 
 -- benchmark :: String -> IO a -> IO a
 -- benchmark msg m = do

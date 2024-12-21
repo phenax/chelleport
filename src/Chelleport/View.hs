@@ -1,5 +1,6 @@
 module Chelleport.View (render) where
 
+import Chelleport.Config
 import Chelleport.Draw
 import Chelleport.Types
 import Chelleport.Utils (intToCInt, isEmpty, isNotEmpty)

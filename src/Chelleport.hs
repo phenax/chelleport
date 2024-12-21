@@ -22,18 +22,19 @@ import Control.Monad.Reader (ReaderT (runReaderT))
 import Data.Maybe (fromMaybe, isJust)
 import qualified SDL
 
-runEff :: (MonadIO m) => DrawContext -> AppM m x -> m x
-runEff ctx action = runReaderT (runAppM action) ctx
-
 run :: IO ()
 run = do
   ctx <- initializeContext
-  setupAppShell
-    ctx
-    (runEff ctx initialState)
-    (\state -> runEff ctx . update state)
-    (const eventHandler)
-    (runEff ctx . Chelleport.View.render)
+  runAppWithCtx ctx $
+    setupAppShell
+      ctx
+      initialState
+      update
+      (const eventHandler)
+      Chelleport.View.render
+  where
+    runAppWithCtx :: (MonadIO m) => DrawContext -> AppM m x -> m x
+    runAppWithCtx ctx action = runReaderT (runAppM action) ctx
 
 initialState :: (Monad m) => m State
 initialState = do
