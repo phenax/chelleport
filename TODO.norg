@@ -2,9 +2,9 @@
   - ( ) Middle click
 
 * Later
-  - ( ) Look into making controls cross-platform (remove x11?)
+  - ( ) Look into making controls cross-platform
   - ( ) Switch to [test-fixture]{https://hackage.haskell.org/package/test-fixture}
 
 * Maybe
   - ( ) Scroll
-  - ( ) Process mode? Run in bg and handle key binding to toggle
+  - ( ) Process mode? Run in bg with root key binding to toggle

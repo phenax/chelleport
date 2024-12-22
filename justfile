@@ -13,3 +13,6 @@ testw *args:
 
 build:
   nix build
+
+appimage:
+  nix bundle --bundler github:ralismark/nix-appimage

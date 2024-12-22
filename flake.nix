@@ -31,6 +31,8 @@
           buildInputs = with pkgs; [
             xorg.libXtst
             xorg.libX11
+            SDL2
+            SDL2_ttf
           ];
         in {
           haskellProjects.default = {

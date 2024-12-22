@@ -35,7 +35,7 @@ run = do
       Chelleport.View.render
   where
     runAppWithCtx :: (MonadIO m) => DrawContext -> AppM m x -> m x
-    runAppWithCtx ctx action = runReaderT (runAppM action) ctx
+    runAppWithCtx ctx = (`runReaderT` ctx) . runAppM
 
 initialState :: (Monad m) => m State
 initialState = do

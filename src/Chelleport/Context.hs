@@ -50,7 +50,7 @@ loadFont = do
 
 initializeRenderer :: SDL.Window -> IO SDL.Renderer
 initializeRenderer window = do
-  renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer
+  renderer <- SDL.createRenderer window (-1) SDL.defaultRenderer -- No hw acc: {SDL.rendererType = SDL.SoftwareRenderer}
   SDL.windowOpacity window $= windowOpacity
   SDL.rendererDrawBlendMode renderer $= SDL.BlendAlphaBlend
   pure renderer

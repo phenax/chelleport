@@ -1,7 +1,7 @@
 # Chelleport
 Control your mouse pointer with your keyboard
 
-> Note: Only supports Linux running X11 display server currently because that's what I use. Might support more if there's interest.
+> Note: So far it only supports Linux running X11 display server with a compositor, because that's what I use. Might support more if there's interest.
 
 https://github.com/user-attachments/assets/93ddc1ff-6cbe-4be4-9507-d68de880212a
 
