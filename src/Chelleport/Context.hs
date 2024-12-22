@@ -1,11 +1,10 @@
 module Chelleport.Context (initializeContext) where
 
--- import Data.Time.Clock.System
--- import qualified Debug.Trace as Debug
-
 import Chelleport.Config
 import Chelleport.Types
 import Data.ByteString (ByteString)
+-- import Data.Time.Clock.System
+-- import qualified Debug.Trace as Debug
 import Data.FileEmbed (embedFileRelative)
 import qualified Graphics.X11 as X11
 import SDL (($=))

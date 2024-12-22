@@ -5,7 +5,7 @@ import Chelleport.Utils (findWithIndex, uniq)
 import Control.Monad (guard)
 import Data.List (elemIndex, isPrefixOf)
 import qualified Data.Map as Map
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (isJust)
 import qualified SDL
 
 nextChars :: KeySequence -> KeyGrid -> Maybe [Char]

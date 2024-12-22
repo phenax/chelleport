@@ -59,26 +59,35 @@ eventHandler event =
   case SDL.eventPayload event of
     SDL.QuitEvent -> Just ShutdownApp
     SDL.KeyboardEvent ev
+      -- Escape
       | isKeyPressWith ev SDL.KeycodeEscape ->
           Just ShutdownApp
+      -- minus / underscore
       | isKeyPressWith ev SDL.KeycodeMinus || isKeyPressWith ev SDL.KeycodeUnderscore ->
           if withShift ev
             then Just $ ChainMouseClick RightClick
             else Just $ TriggerMouseClick RightClick
+      -- 0-9
       | isKeycodeDigit (eventToKeycode ev) ->
           Just $ UpdateRepetition (fromMaybe 0 $ keycodeToInt $ eventToKeycode ev)
+      -- Space / Shift+Space
       | isKeyPressWith ev SDL.KeycodeSpace ->
           if withShift ev
             then Just $ ChainMouseClick LeftClick
             else Just $ TriggerMouseClick LeftClick
+      -- Tab / Backspace
       | isKeyPressWith ev SDL.KeycodeTab || isKeyPressWith ev SDL.KeycodeBackspace ->
           Just ResetKeys
+      -- Ctrl + V
       | withCtrl ev && isKeyPressWith ev SDL.KeycodeV ->
           Just MouseDragToggle
+      -- A-Z
       | isKeyPressed ev && isValidKey (eventToKeycode ev) ->
           Just $ HandleKeyInput $ eventToKeycode ev
+      -- Shift press
       | isKeyPressWith ev SDL.KeycodeLShift || isKeyPressWith ev SDL.KeycodeRShift ->
           Just $ UpdateShiftState True
+      -- Shift release
       | isKeyReleaseWith ev SDL.KeycodeLShift || isKeyReleaseWith ev SDL.KeycodeRShift ->
           Just $ UpdateShiftState False
     _ -> Nothing
@@ -171,7 +180,7 @@ update state MouseDragEnd = do
   showWindow
   pure (state {stateRepetition = 1}, Nothing)
 
--- Set/unset whether shift is pressed
+-- Set repetition count
 update state (UpdateRepetition count) = do
   pure (state {stateRepetition = count}, Nothing)
 
