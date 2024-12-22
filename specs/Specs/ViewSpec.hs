@@ -3,8 +3,8 @@ module Specs.ViewSpec where
 import Chelleport.Config
 import Chelleport.Types
 import Chelleport.View
-import Mock
 import Test.Hspec
+import TestUtils
 
 test :: SpecWith ()
 test = do
@@ -17,7 +17,7 @@ test = do
             stateRepetition = 1,
             stateIsDragging = False
           }
-  let drawTextCalls = filter (\case CallDrawText {} -> True; _ -> False) . calls
+  let drawTextCalls = filter (\case Mock_drawText {} -> True; _ -> False) . calls
 
   describe "#render" $ do
     context "when key sequence is empty" $ do
@@ -26,10 +26,10 @@ test = do
       it "draws matching text labels" $ do
         (_, mock) <- runWithMocks $ render currentState
         drawTextCalls mock
-          `shouldBe` [ CallDrawText (460, 10) colorWhite "ABC",
-                       CallDrawText (1420, 10) colorWhite "DEF",
-                       CallDrawText (460, 550) colorWhite "DJK",
-                       CallDrawText (1420, 550) colorWhite "JKL"
+          `shouldBe` [ Mock_drawText (460, 10) colorWhite "ABC",
+                       Mock_drawText (1420, 10) colorWhite "DEF",
+                       Mock_drawText (460, 550) colorWhite "DJK",
+                       Mock_drawText (1420, 550) colorWhite "JKL"
                      ]
 
     context "when there is a partial match" $ do
@@ -38,10 +38,10 @@ test = do
       it "draws matching text labels" $ do
         (_, mock) <- runWithMocks $ render currentState
         drawTextCalls mock
-          `shouldBe` [ CallDrawText (1420, 10) colorLightGray "D",
-                       CallDrawText (1430, 10) colorAccent "EF",
-                       CallDrawText (460, 550) colorLightGray "D",
-                       CallDrawText (470, 550) colorAccent "JK"
+          `shouldBe` [ Mock_drawText (1420, 10) colorLightGray "D",
+                       Mock_drawText (1430, 10) colorAccent "EF",
+                       Mock_drawText (460, 550) colorLightGray "D",
+                       Mock_drawText (470, 550) colorAccent "JK"
                      ]
 
     context "when key sequence is complete match" $ do
@@ -49,14 +49,14 @@ test = do
 
       it "draws only the matching label" $ do
         (_, mock) <- runWithMocks $ render currentState
-        drawTextCalls mock `shouldBe` [CallDrawText (1420, 10) colorLightGray "DEF"]
+        drawTextCalls mock `shouldBe` [Mock_drawText (1420, 10) colorLightGray "DEF"]
 
   describe "#renderKeySequence" $ do
     context "when there is a partial match" $ do
       it "draws the matched section and highlights the remaining characters" $ do
         (_, mock) <- runWithMocks $ renderKeySequence "ABC" "ABCDE" (0, 0)
         calls mock
-          `shouldBe` [CallDrawText (0, 0) colorLightGray "ABC", CallDrawText (3 * 10, 0) colorAccent "DE"]
+          `shouldBe` [Mock_drawText (0, 0) colorLightGray "ABC", Mock_drawText (3 * 10, 0) colorAccent "DE"]
 
       it "return true as the text is visible" $ do
         (isVisible, _) <- runWithMocks $ renderKeySequence "ABC" "ABCDE" (0, 0)
@@ -65,7 +65,7 @@ test = do
     context "when there is no input key sequence" $ do
       it "draws text as a single chunk" $ do
         (_, mock) <- runWithMocks $ renderKeySequence "" "ABCD" (0, 0)
-        calls mock `shouldBe` [CallDrawText (0, 0) colorWhite "ABCD"]
+        calls mock `shouldBe` [Mock_drawText (0, 0) colorWhite "ABCD"]
 
       it "return true as the text is visible" $ do
         (isVisible, _) <- runWithMocks $ renderKeySequence "" "ABCD" (0, 0)

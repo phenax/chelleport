@@ -4,9 +4,9 @@ import Chelleport (initialState, update)
 import Chelleport.Types
 import Chelleport.Utils (intToCInt, uniq)
 import Control.Monad (join)
-import Mock
 import qualified SDL
 import Test.Hspec
+import TestUtils
 
 test :: SpecWith ()
 test = do
@@ -71,7 +71,7 @@ test = do
 
       it "hides window and triggers mouse click" $ do
         (_, mock) <- runWithMocks $ update currentState $ TriggerMouseClick LeftClick
-        calls mock `shouldContain` [CallHideWindow, CallClickMouseButton LeftClick]
+        calls mock `shouldContain` [Mock_hideWindow, Mock_clickMouseButton LeftClick]
 
       it "continues with action ShutdownApp without updating state" $ do
         ((nextState, action), _) <- runWithMocks $ update currentState $ TriggerMouseClick LeftClick
@@ -88,10 +88,10 @@ test = do
         it "clicks multiple times" $ do
           (_, mock) <- runWithMocks $ update currentState $ TriggerMouseClick LeftClick
           calls mock
-            `shouldBe` [ CallHideWindow,
-                         CallClickMouseButton LeftClick,
-                         CallClickMouseButton LeftClick,
-                         CallClickMouseButton LeftClick
+            `shouldBe` [ Mock_hideWindow,
+                         Mock_clickMouseButton LeftClick,
+                         Mock_clickMouseButton LeftClick,
+                         Mock_clickMouseButton LeftClick
                        ]
 
       context "when repetition is 0" $ do
@@ -99,14 +99,14 @@ test = do
 
         it "clicks just once" $ do
           (_, mock) <- runWithMocks $ update currentState $ TriggerMouseClick LeftClick
-          calls mock `shouldBe` [CallHideWindow, CallClickMouseButton LeftClick]
+          calls mock `shouldBe` [Mock_hideWindow, Mock_clickMouseButton LeftClick]
 
     context "with action ChainMouseClick" $ do
       let currentState = defaultState
 
       it "hides window, triggers mouse click and shows the window again" $ do
         (_, mock) <- runWithMocks $ update currentState $ ChainMouseClick LeftClick
-        calls mock `shouldBe` [CallHideWindow, CallClickMouseButton LeftClick, CallShowWindow]
+        calls mock `shouldBe` [Mock_hideWindow, Mock_clickMouseButton LeftClick, Mock_showWindow]
 
       it "continues with action ResetKeys without updating state" $ do
         ((nextState, action), _) <- runWithMocks $ update currentState $ ChainMouseClick LeftClick
@@ -123,11 +123,11 @@ test = do
         it "clicks multiple times" $ do
           (_, mock) <- runWithMocks $ update currentState $ ChainMouseClick LeftClick
           calls mock
-            `shouldBe` [ CallHideWindow,
-                         CallClickMouseButton LeftClick,
-                         CallClickMouseButton LeftClick,
-                         CallClickMouseButton LeftClick,
-                         CallShowWindow
+            `shouldBe` [ Mock_hideWindow,
+                         Mock_clickMouseButton LeftClick,
+                         Mock_clickMouseButton LeftClick,
+                         Mock_clickMouseButton LeftClick,
+                         Mock_showWindow
                        ]
 
       context "when repetition is 0" $ do
@@ -135,7 +135,7 @@ test = do
 
         it "clicks just once" $ do
           (_, mock) <- runWithMocks $ update currentState $ ChainMouseClick LeftClick
-          calls mock `shouldBe` [CallHideWindow, CallClickMouseButton LeftClick, CallShowWindow]
+          calls mock `shouldBe` [Mock_hideWindow, Mock_clickMouseButton LeftClick, Mock_showWindow]
 
     context "with action MouseDragToggle" $ do
       context "when is dragging is true" $ do
@@ -165,7 +165,7 @@ test = do
 
       it "hides window, starts dragging and shows the window again" $ do
         (_, mock) <- runWithMocks $ update currentState MouseDragStart
-        calls mock `shouldContain` [CallHideWindow, CallPressMouseButton, CallShowWindow]
+        calls mock `shouldContain` [Mock_hideWindow, Mock_pressMouseButton, Mock_showWindow]
 
       it "does not continue or update state" $ do
         (result, _) <- runWithMocks $ update currentState MouseDragStart
@@ -176,7 +176,7 @@ test = do
 
       it "hides window, stops dragging and shows the window again" $ do
         (_, mock) <- runWithMocks $ update currentState MouseDragEnd
-        calls mock `shouldContain` [CallHideWindow, CallReleaseMouseButton, CallShowWindow]
+        calls mock `shouldContain` [Mock_hideWindow, Mock_releaseMouseButton, Mock_showWindow]
 
       it "does not continue or update state" $ do
         (result, _) <- runWithMocks $ update currentState MouseDragStart
@@ -191,7 +191,7 @@ test = do
       it "moves mouse pointer to center of cell of given coordinates" $ do
         (_, mock) <- runWithMocks $ update currentState $ MoveMousePosition (0, 0)
         mock
-          `shouldHaveCalled` CallMoveMousePosition
+          `shouldHaveCalled` Mock_moveMousePointer
             (mockWindowOffsetX + mockWindowWidth `div` columns `div` 2)
             (mockWindowOffsetY + mockWindowHeight `div` rows `div` 2)
 
@@ -213,7 +213,7 @@ test = do
       -- TODO: Test with inline mocked values
       it "increments mouse position relative to current position" $ do
         (_, mock) <- runWithMocks $ update currentState $ IncrementMouseCursor (10, -5)
-        mock `shouldHaveCalled` CallMoveMousePosition 52 37
+        mock `shouldHaveCalled` Mock_moveMousePointer 52 37
 
       it "does not continue or update state" $ do
         (result, _) <- runWithMocks $ update currentState $ IncrementMouseCursor (0, 0)
@@ -224,21 +224,21 @@ test = do
 
         it "multiplies increment" $ do
           (_, mock) <- runWithMocks $ update currentState $ IncrementMouseCursor (10, -5)
-          mock `shouldHaveCalled` CallMoveMousePosition 92 17
+          mock `shouldHaveCalled` Mock_moveMousePointer 92 17
 
       context "when repetition is 0" $ do
         let currentState = defaultState {stateRepetition = 0}
 
         it "increments just once" $ do
           (_, mock) <- runWithMocks $ update currentState $ IncrementMouseCursor (10, -5)
-          mock `shouldHaveCalled` CallMoveMousePosition 52 37
+          mock `shouldHaveCalled` Mock_moveMousePointer 52 37
 
     context "with action ShutdownApp" $ do
       let currentState = defaultState
 
       it "shuts down app" $ do
         (_, mock) <- runWithMocks $ update currentState ShutdownApp
-        mock `shouldHaveCalled` CallShutdownApp
+        mock `shouldHaveCalled` Mock_shutdownApp
 
       it "does not continue or update state" $ do
         (result, _) <- runWithMocks $ update currentState ShutdownApp

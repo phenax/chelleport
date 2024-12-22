@@ -14,6 +14,7 @@ common common-config
     ExplicitForAll
     FlexibleContexts
     FlexibleInstances
+    GADTs
     GeneralizedNewtypeDeriving
     LambdaCase
     NamedFieldPuns
@@ -75,10 +76,12 @@ test-suite specs
   ghc-options: -Wno-name-shadowing
   other-modules:
     Mock
+    TestUtils
     Specs.KeySequenceSpec
     Specs.AppStateUpdateSpec
     Specs.AppEventSpec
     Specs.ViewSpec
   build-depends:
     lib-chelleport,
+    template-haskell,
     hspec

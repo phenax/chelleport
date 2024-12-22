@@ -1,81 +1,33 @@
 module Mock where
 
-import Chelleport.AppShell (MonadAppShell (..))
-import Chelleport.Control (MonadControl (..))
-import Chelleport.Draw (MonadDraw (..))
-import Chelleport.Types
-import Control.Monad (void)
-import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.State (MonadState (state), StateT (runStateT))
-import Data.Text (Text)
-import qualified Data.Text as Text
-import Foreign.C (CInt)
-import Test.Hspec
+import Control.Monad (join)
+import Language.Haskell.TH
 
-data Call
-  = CallDrawCircle Int (CInt, CInt)
-  | CallDrawLine (CInt, CInt) (CInt, CInt)
-  | CallDrawText (CInt, CInt) Color Text
-  | CallGetMousePointerPosition
-  | CallHideWindow
-  | CallPressMouseButton
-  | CallReleaseMouseButton
-  | CallMoveMousePosition CInt CInt
-  | CallClickMouseButton MouseButtonType
-  | CallSetDrawColor Color
-  | CallShowWindow
-  | CallShutdownApp
-  | CallWindowPosition
-  | CallWindowSize
-  deriving (Show, Eq)
+typeclassFunctions :: Name -> Q [(Name, Type)]
+typeclassFunctions cls = do
+  c <- reify cls
+  pure $ case c of
+    ClassI (ClassD _ _ _ _ declr) _ -> declr >>= functionName
+    _ -> []
+  where
+    functionName (SigD name typ) = [(name, typ)]
+    functionName _ = []
 
-newtype MockCalls = MockCalls {calls :: [Call]}
-  deriving (Show)
+generateMock :: [Name] -> Q [Dec]
+generateMock clss = do
+  functions <- join <$> mapM typeclassFunctions clss
+  pure [DataD [] (mkName "Call") [] Nothing (toCtor <$> functions) [deriveClause]]
+  where
+    deriveClause = DerivClause Nothing (ConT <$> [''Show, ''Eq])
 
-registerMockCall :: (MonadState MockCalls m) => Call -> m ()
-registerMockCall call =
-  void $ state (\mock -> ((), MockCalls {calls = calls mock ++ [call]}))
+    toCtor :: (Name, Type) -> Con
+    toCtor (name, typ) = NormalC (toCtorName name) ((noBang,) <$> getArgs typ)
 
-shouldHaveCalled :: (HasCallStack) => MockCalls -> Call -> Expectation
-shouldHaveCalled mock call = calls mock `shouldContain` [call]
+    getArgs :: Type -> [Type]
+    getArgs (AppT (AppT ArrowT typ) rest) = typ : getArgs rest
+    getArgs _ = []
 
-runWithMocks :: (MonadIO m) => TestM m a -> m (a, MockCalls)
-runWithMocks action = runStateT (runTestM action) (MockCalls [])
+    noBang = Bang NoSourceUnpackedness NoSourceStrictness
 
-newtype TestM m a = TestM {runTestM :: StateT MockCalls m a}
-  deriving (Functor, Applicative, Monad, MonadIO, MonadState MockCalls)
-
-instance (MonadIO m) => MonadControl (TestM m) where
-  clickMouseButton btn = registerMockCall $ CallClickMouseButton btn
-  moveMousePointer x y = registerMockCall $ CallMoveMousePosition x y
-  getMousePointerPosition = (42, 42) <$ registerMockCall CallGetMousePointerPosition
-  pressMouseButton = registerMockCall CallPressMouseButton
-  releaseMouseButton = registerMockCall CallReleaseMouseButton
-
-mockWindowWidth :: CInt
-mockWindowWidth = 1920
-
-mockWindowHeight :: CInt
-mockWindowHeight = 1080
-
-mockWindowOffsetX :: CInt
-mockWindowOffsetX = 200
-
-mockWindowOffsetY :: CInt
-mockWindowOffsetY = 100
-
-mockTextWidth :: Int
-mockTextWidth = 10
-
-instance (MonadIO m) => MonadDraw (TestM m) where
-  drawLine p1 p2 = registerMockCall $ CallDrawLine p1 p2
-  drawText p color text = (fromIntegral $ mockTextWidth * Text.length text, 0) <$ registerMockCall (CallDrawText p color text)
-  drawCircle radius p = registerMockCall $ CallDrawCircle radius p
-  setDrawColor color = registerMockCall $ CallSetDrawColor color
-  windowSize = (mockWindowWidth, mockWindowHeight) <$ registerMockCall CallWindowSize
-  windowPosition = (mockWindowOffsetX, mockWindowOffsetY) <$ registerMockCall CallWindowPosition
-
-instance (MonadIO m) => MonadAppShell (TestM m) where
-  hideWindow = registerMockCall CallHideWindow
-  showWindow = registerMockCall CallShowWindow
-  shutdownApp = registerMockCall CallShutdownApp
+    toCtorName :: Name -> Name
+    toCtorName = mkName . ("Mock_" ++) . nameBase
