@@ -1,9 +1,14 @@
 * Current
+  - ( ) Optimize speed of ocr
+  --- Load incrementally?
+  - ( ) Preprocessing screenshot for better ocr
+  - ( ) Add hjkl for search mode
   - ( ) Middle click
 
 * Later
   - ( ) Look into making controls cross-platform
-  - ( ) Switch to [test-fixture]{https://hackage.haskell.org/package/test-fixture}
+  - ( ) Lens-ey setup for Mode access
+  - ( ) Switch to [test-fixture]{https://hackage.haskell.org/package/test-fixture}?
 
 * Maybe
   - ( ) Scroll

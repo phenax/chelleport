@@ -35,3 +35,11 @@ benchmark msg m = do
   end <- systemNanoseconds <$> liftIO getSystemTime
   Debug.traceM $ msg ++ " (ms): " ++ show (fromIntegral (end - start) / 1_000_000.0 :: Double)
   pure result
+
+itemAt :: [a] -> Int -> Maybe a
+itemAt [] _ = Nothing
+itemAt (x : _) 0 = Just x
+itemAt (_ : xs) i = itemAt xs (i - 1)
+
+clamp :: (Integral a) => (a, a) -> a -> a
+clamp (low, high) n = max low (min high n)

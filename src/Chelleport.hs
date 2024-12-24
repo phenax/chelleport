@@ -16,7 +16,7 @@ import Chelleport.Draw (MonadDraw (windowPosition), cellSize)
 import Chelleport.KeySequence (findMatchPosition, generateGrid, isKeycodeDigit, isValidKey, keycodeToInt, nextChars, toKeyChar)
 import Chelleport.OCR (MonadOCR, getWordsOnScreen)
 import Chelleport.Types
-import Chelleport.Utils (cIntToInt, intToCInt, isEmpty, isNotEmpty)
+import Chelleport.Utils (cIntToInt, clamp, intToCInt, isEmpty, isNotEmpty, itemAt)
 import qualified Chelleport.View
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (MonadIO)
@@ -34,7 +34,7 @@ run = do
       ctx
       initialState
       update
-      (const eventHandler)
+      eventHandler
       Chelleport.View.render
   where
     runAppWithCtx :: (MonadIO m) => DrawContext -> AppM m x -> m x
@@ -49,8 +49,8 @@ initialState = do
     columns = 16
     hintKeys = ['A' .. 'Z']
 
-eventHandler :: SDL.Event -> Maybe AppAction
-eventHandler event =
+eventHandler :: State -> SDL.Event -> Maybe AppAction
+eventHandler state event =
   case SDL.eventPayload event of
     SDL.QuitEvent -> Just ShutdownApp
     SDL.KeyboardEvent ev
@@ -71,6 +71,9 @@ eventHandler event =
       -- Enable hints mode
       | withCtrl ev && isKeyPressWith ev SDL.KeycodeH ->
           Just $ SetMode defaultHintsMode
+      -- Search increment next/prev
+      | withCtrl ev && isKeyPressWith ev SDL.KeycodeN -> Just $ IncrementHighlightIndex (stateRepetition state)
+      | withCtrl ev && isKeyPressWith ev SDL.KeycodeP -> Just $ IncrementHighlightIndex (-1 * stateRepetition state)
       -- Space / Shift+Space
       | isKeyPressWith ev SDL.KeycodeSpace ->
           if withShift ev
@@ -92,6 +95,11 @@ eventHandler event =
       | isKeyReleaseWith ev SDL.KeycodeLShift || isKeyReleaseWith ev SDL.KeycodeRShift ->
           Just $ UpdateShiftState False
     _ -> Nothing
+
+wordPosition :: (MonadDraw m) => OCRMatch -> m (Int, Int)
+wordPosition (OCRMatch {matchStartX, matchStartY}) = do
+  (x, y) <- windowPosition
+  pure (cIntToInt $ x + matchStartX, cIntToInt $ y + matchStartY)
 
 update :: (MonadAppShell m, MonadDraw m, MonadControl m, MonadOCR m) => State -> AppAction -> m (State, Maybe AppAction)
 -- Set mode
@@ -138,16 +146,38 @@ update state@(State {stateMode = ModeSearch {searchWords, searchInputText}}) (Ha
     Just keyChar -> do
       let searchText = searchInputText ++ [toLower keyChar]
       let matches = filterMatches searchText
-      let highlightedWord = if isNotEmpty matches then Just $ head matches else Nothing
-      let updatedMode = (stateMode state) {searchInputText = searchText, searchFilteredWords = matches}
-      pure (state {stateMode = updatedMode}, MoveMousePosition . wordPosition <$> highlightedWord)
+      let mode = stateMode state
+      let highlightedIndex = clamp (0, length matches - 1) (searchHighlightedIndex mode)
+      let updatedMode =
+            mode
+              { searchInputText = searchText,
+                searchFilteredWords = matches,
+                searchHighlightedIndex = highlightedIndex
+              }
+      let highlightedWord = matches `itemAt` highlightedIndex
+      action <- maybe (pure Nothing) (fmap (Just . MoveMousePosition) . wordPosition) highlightedWord
+      pure (state {stateMode = updatedMode}, action)
     _ -> do
       pure (state, Nothing)
   where
-    wordPosition w = (cIntToInt $ matchStartX w, cIntToInt $ matchStartY w)
     filterMatches text
       | isEmpty text = searchWords
       | otherwise = filter (isInfixOf text . map toLower . matchText) searchWords
+
+-- Increment highlighted index for search mode
+update state (IncrementHighlightIndex n) = do
+  case stateMode state of
+    ModeSearch {} -> do
+      let mode = stateMode state
+      let index = searchHighlightedIndex mode + n
+      let highlightedIndex =
+            if index < 0
+              then length (searchFilteredWords mode) - 1
+              else index `mod` length (searchFilteredWords mode)
+      let highlightedWord = searchFilteredWords mode `itemAt` highlightedIndex
+      action <- maybe (pure Nothing) (fmap (Just . MoveMousePosition) . wordPosition) highlightedWord
+      pure (state {stateRepetition = 1, stateMode = mode {searchHighlightedIndex = highlightedIndex}}, action)
+    _ -> pure (state, Nothing)
 
 -- Move mouse incrementally
 update state (IncrementMouseCursor (incX, incY)) = do

@@ -12,13 +12,14 @@ import Foreign.C (CInt)
 render :: (MonadDraw m) => State -> m ()
 render state = case stateMode state of
   ModeHints -> renderHintsView state
-  ModeSearch {searchFilteredWords} -> renderSearchView state searchFilteredWords
+  ModeSearch {searchFilteredWords, searchHighlightedIndex} ->
+    renderSearchView state searchFilteredWords searchHighlightedIndex
 
-renderSearchView :: (MonadDraw m) => State -> [OCRMatch] -> m ()
-renderSearchView state matches = do
+renderSearchView :: (MonadDraw m) => State -> [OCRMatch] -> Int -> m ()
+renderSearchView state matches highlightedIndex = do
   renderGridLines state
-  setDrawColor colorWhite
-  forM_ matches $ \(OCRMatch {matchStartX, matchStartY, matchEndX, matchEndY}) -> do
+  forM_ (zip [0 ..] matches) $ \(index, OCRMatch {matchStartX, matchStartY, matchEndX, matchEndY}) -> do
+    setDrawColor $ if highlightedIndex == index then colorAccent else colorLightGray
     fillRectVertices (matchStartX, matchStartY) (matchEndX, matchEndY)
 
 renderHintsView :: (MonadDraw m) => State -> m ()

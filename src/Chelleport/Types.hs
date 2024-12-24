@@ -22,12 +22,19 @@ data Mode
   | ModeSearch
       { searchWords :: [OCRMatch],
         searchFilteredWords :: [OCRMatch],
-        searchInputText :: String
+        searchInputText :: String,
+        searchHighlightedIndex :: Int
       }
   deriving (Show, Eq)
 
 defaultSearchMode :: Mode
-defaultSearchMode = ModeSearch {searchWords = [], searchFilteredWords = [], searchInputText = ""}
+defaultSearchMode =
+  ModeSearch
+    { searchWords = [],
+      searchFilteredWords = [],
+      searchInputText = "",
+      searchHighlightedIndex = 0
+    }
 
 defaultHintsMode :: Mode
 defaultHintsMode = ModeHints
@@ -69,6 +76,7 @@ data AppAction
   | UpdateShiftState Bool
   | UpdateRepetition Int
   | SetMode Mode
+  | IncrementHighlightIndex Int
   deriving (Show, Eq)
 
 data DrawContext = DrawContext
