@@ -3,6 +3,7 @@ module TestUtils where
 import Chelleport.AppShell (MonadAppShell (..))
 import Chelleport.Control (MonadControl (..))
 import Chelleport.Draw (MonadDraw (..))
+import Chelleport.OCR (MonadOCR (..))
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.State (MonadState (state), StateT (runStateT))
@@ -11,7 +12,7 @@ import Foreign.C (CInt)
 import Mock
 import Test.Hspec
 
-$(generateMock [''MonadDraw, ''MonadControl, ''MonadAppShell])
+$(generateMock [''MonadDraw, ''MonadControl, ''MonadAppShell, ''MonadOCR])
 
 newtype MockCalls = MockCalls {calls :: [Call]}
   deriving (Show)
@@ -53,6 +54,7 @@ instance (MonadIO m) => MonadControl (TestM m) where
 
 instance (MonadIO m) => MonadDraw (TestM m) where
   drawLine p1 p2 = registerMockCall $ Mock_drawLine p1 p2
+  fillRect p size = registerMockCall $ Mock_fillRect p size
   drawText p color text = (fromIntegral $ mockTextWidth * Text.length text, 0) <$ registerMockCall (Mock_drawText p color text)
   drawCircle radius p = registerMockCall $ Mock_drawCircle radius p
   setDrawColor color = registerMockCall $ Mock_setDrawColor color
@@ -63,3 +65,6 @@ instance (MonadIO m) => MonadAppShell (TestM m) where
   hideWindow = registerMockCall Mock_hideWindow
   showWindow = registerMockCall Mock_showWindow
   shutdownApp = registerMockCall Mock_shutdownApp
+
+instance (MonadIO m) => MonadOCR (TestM m) where
+  getWordsOnScreen = [] <$ registerMockCall Mock_getWordsOnScreen

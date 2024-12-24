@@ -17,8 +17,20 @@ type KeySequence = [Char]
 
 type KeyGrid = [[Cell]]
 
-data Mode = ModeHints | ModeSearch
+data Mode
+  = ModeHints
+  | ModeSearch
+      { searchWords :: [OCRMatch],
+        searchFilteredWords :: [OCRMatch],
+        searchInputText :: String
+      }
   deriving (Show, Eq)
+
+defaultSearchMode :: Mode
+defaultSearchMode = ModeSearch {searchWords = [], searchFilteredWords = [], searchInputText = ""}
+
+defaultHintsMode :: Mode
+defaultHintsMode = ModeHints
 
 data State = State
   { stateGrid :: KeyGrid,
@@ -30,6 +42,18 @@ data State = State
     stateMode :: Mode
   }
   deriving (Show, Eq)
+
+defaultAppState :: State
+defaultAppState =
+  State
+    { stateGrid = [],
+      stateKeySequence = "",
+      stateIsMatched = False,
+      stateIsShiftPressed = False,
+      stateIsDragging = False,
+      stateRepetition = 1,
+      stateMode = ModeHints
+    }
 
 data AppAction
   = ChainMouseClick MouseButtonType
@@ -44,6 +68,7 @@ data AppAction
   | TriggerMouseClick MouseButtonType
   | UpdateShiftState Bool
   | UpdateRepetition Int
+  | SetMode Mode
   deriving (Show, Eq)
 
 data DrawContext = DrawContext
@@ -66,7 +91,7 @@ data OCRMatch = OCRMatch
     matchEndY :: !CInt,
     matchText :: !String
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 instance Storable OCRMatch where
   sizeOf _ = 4 * sizeOf (undefined :: CInt) + sizeOf (undefined :: Ptr CChar)

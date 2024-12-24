@@ -10,7 +10,19 @@ import qualified Data.Text as Text
 import Foreign.C (CInt)
 
 render :: (MonadDraw m) => State -> m ()
-render state = do
+render state = case stateMode state of
+  ModeHints -> renderHintsView state
+  ModeSearch {searchFilteredWords} -> renderSearchView state searchFilteredWords
+
+renderSearchView :: (MonadDraw m) => State -> [OCRMatch] -> m ()
+renderSearchView state matches = do
+  renderGridLines state
+  setDrawColor colorWhite
+  forM_ matches $ \(OCRMatch {matchStartX, matchStartY, matchEndX, matchEndY}) -> do
+    fillRectVertices (matchStartX, matchStartY) (matchEndX, matchEndY)
+
+renderHintsView :: (MonadDraw m) => State -> m ()
+renderHintsView state = do
   renderGridLines state
 
   (wcell, hcell) <- cellSize state

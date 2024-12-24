@@ -26,6 +26,7 @@
           });
           otherFiles = [
             { source = ./static; target = "static"; }
+            { source = ./include; target = "include"; }
           ];
           configurationFlags = [
             "--ghc-options=-O2"
@@ -37,7 +38,6 @@
             SDL2_ttf
             tesseract
             leptonica
-            imagemagick
 
             gcc
             pkg-config

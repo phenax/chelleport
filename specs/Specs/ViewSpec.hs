@@ -8,16 +8,7 @@ import TestUtils
 
 test :: SpecWith ()
 test = do
-  let defaultState =
-        State
-          { stateKeySequence = [],
-            stateIsShiftPressed = False,
-            stateIsMatched = False,
-            stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]],
-            stateRepetition = 1,
-            stateIsDragging = False,
-            stateMode = ModeHints
-          }
+  let defaultState = defaultAppState {stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]]}
   let drawTextCalls = filter (\case Mock_drawText {} -> True; _ -> False) . calls
 
   describe "#render" $ do

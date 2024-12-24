@@ -14,22 +14,17 @@ import Chelleport.Control
   )
 import Chelleport.Draw (MonadDraw (windowPosition), cellSize)
 import Chelleport.KeySequence (findMatchPosition, generateGrid, isKeycodeDigit, isValidKey, keycodeToInt, nextChars, toKeyChar)
+import Chelleport.OCR (MonadOCR, getWordsOnScreen)
 import Chelleport.Types
-import Chelleport.Utils (intToCInt)
+import Chelleport.Utils (cIntToInt, intToCInt, isEmpty, isNotEmpty)
 import qualified Chelleport.View
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader (ReaderT (runReaderT))
+import Data.Char (toLower)
+import Data.List (isInfixOf)
 import Data.Maybe (fromMaybe, isJust)
 import qualified SDL
-
--- run :: IO ()
--- run = do
---   ctx <- initializeContext
---   benchmark "ocr" $ do
---     res <- (`runReaderT` ctx) . runAppM $ getWordsOnScreen
---     print $ "---" ++ show (length res)
---   pure ()
 
 run :: IO ()
 run = do
@@ -45,19 +40,10 @@ run = do
     runAppWithCtx :: (MonadIO m) => DrawContext -> AppM m x -> m x
     runAppWithCtx ctx = (`runReaderT` ctx) . runAppM
 
-initialState :: (Monad m) => m State
+initialState :: (Monad m) => m (State, Maybe AppAction)
 initialState = do
   let cells = fromMaybe (pure undefined) $ generateGrid 0 (rows, columns) hintKeys
-  pure $
-    State
-      { stateGrid = cells,
-        stateKeySequence = [],
-        stateIsMatched = False,
-        stateIsShiftPressed = False,
-        stateIsDragging = False,
-        stateRepetition = 1,
-        stateMode = ModeSearch
-      }
+  pure (defaultAppState {stateGrid = cells}, Just $ SetMode defaultHintsMode)
   where
     rows = 9
     columns = 16
@@ -79,6 +65,12 @@ eventHandler event =
       -- 0-9
       | isKeycodeDigit (eventToKeycode ev) ->
           Just $ UpdateRepetition (fromMaybe 0 $ keycodeToInt $ eventToKeycode ev)
+      -- Enable search mode
+      | withCtrl ev && isKeyPressWith ev SDL.KeycodeS ->
+          Just $ SetMode defaultSearchMode
+      -- Enable hints mode
+      | withCtrl ev && isKeyPressWith ev SDL.KeycodeH ->
+          Just $ SetMode defaultHintsMode
       -- Space / Shift+Space
       | isKeyPressWith ev SDL.KeycodeSpace ->
           if withShift ev
@@ -101,9 +93,18 @@ eventHandler event =
           Just $ UpdateShiftState False
     _ -> Nothing
 
-update :: (MonadAppShell m, MonadDraw m, MonadControl m) => State -> AppAction -> m (State, Maybe AppAction)
--- Act on key inputs
-update state (HandleKeyInput key) = do
+update :: (MonadAppShell m, MonadDraw m, MonadControl m, MonadOCR m) => State -> AppAction -> m (State, Maybe AppAction)
+-- Set mode
+update state (SetMode mode) = do
+  case mode of
+    ModeHints -> pure (state {stateMode = mode}, Nothing)
+    ModeSearch {} -> do
+      wordsOnScreen <- getWordsOnScreen
+      let updatedMode = mode {searchWords = wordsOnScreen, searchFilteredWords = wordsOnScreen}
+      pure (state {stateMode = updatedMode}, Nothing)
+
+-- HINTS MODE: Act on key inputs
+update state@(State {stateMode = ModeHints}) (HandleKeyInput key) = do
   case (toKeyChar key, validChars) of
     (Just keyChar, Just validChars')
       | stateIsMatched state && keyChar `elem` ("HJKL" :: String) -> do
@@ -114,35 +115,51 @@ update state (HandleKeyInput key) = do
           let newKeySequence = stateKeySequence state ++ [keyChar]
           let matchPosition = findMatchPosition newKeySequence $ stateGrid state
           let state' = state {stateKeySequence = newKeySequence, stateIsMatched = isJust matchPosition}
-          pure (state', MoveMousePosition <$> matchPosition)
+          action <- maybe (pure Nothing) (fmap (Just . MoveMousePosition) . getPosition) matchPosition
+          pure (state', action)
     _ -> pure (state, Nothing)
   where
     validChars = nextChars (stateKeySequence state) (stateGrid state)
+    getPosition (row, col) = do
+      (wcell, hcell) <- cellSize state
+      let x = (wcell `div` 2) + wcell * intToCInt col
+      let y = (hcell `div` 2) + hcell * intToCInt row
+      (winx, winy) <- windowPosition
+      pure (cIntToInt $ winx + x, cIntToInt $ winy + y)
     incrementValue = do
       (wcell, hcell) <- cellSize state
       if stateIsShiftPressed state
         then pure (wcell `div` 4, hcell `div` 4)
         else pure (wcell `div` 16, hcell `div` 16)
 
+-- SEARCH MODE: Act on key inputs
+update state@(State {stateMode = ModeSearch {searchWords, searchInputText}}) (HandleKeyInput key) = do
+  case toKeyChar key of
+    Just keyChar -> do
+      let searchText = searchInputText ++ [toLower keyChar]
+      let matches = filterMatches searchText
+      let highlightedWord = if isNotEmpty matches then Just $ head matches else Nothing
+      let updatedMode = (stateMode state) {searchInputText = searchText, searchFilteredWords = matches}
+      pure (state {stateMode = updatedMode}, MoveMousePosition . wordPosition <$> highlightedWord)
+    _ -> do
+      pure (state, Nothing)
+  where
+    wordPosition w = (cIntToInt $ matchStartX w, cIntToInt $ matchStartY w)
+    filterMatches text
+      | isEmpty text = searchWords
+      | otherwise = filter (isInfixOf text . map toLower . matchText) searchWords
+
 -- Move mouse incrementally
 update state (IncrementMouseCursor (incX, incY)) = do
   (curX, curY) <- getMousePointerPosition
-  let count = intToCInt $ case stateRepetition state of 0 -> 1; n -> n
-  moveMousePointer (curX + count * intToCInt incX) (curY + count * intToCInt incY)
-  pure (state {stateRepetition = 1}, Nothing)
+  let count = case stateRepetition state of 0 -> 1; n -> n
+  let pos = (cIntToInt curX + count * incX, cIntToInt curY + count * incY)
+  pure (state {stateRepetition = 1}, Just $ MoveMousePosition pos)
 
 -- Move mouse to given position
-update state (MoveMousePosition (row, col)) = do
-  (x, y) <- getPosition
-  moveMousePointer x y
+update state (MoveMousePosition (x, y)) = do
+  moveMousePointer (intToCInt x) (intToCInt y)
   pure (state, Nothing)
-  where
-    getPosition = do
-      (wcell, hcell) <- cellSize state
-      let x = (wcell `div` 2) + wcell * intToCInt col
-      let y = (hcell `div` 2) + hcell * intToCInt row
-      (winx, winy) <- windowPosition
-      pure (winx + x, winy + y)
 
 -- Reset entered key sequence and state
 update state ResetKeys = do

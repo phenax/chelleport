@@ -13,6 +13,8 @@
 std::vector<OCRMatch> extractTextCoordinates(const char *imagePath);
 
 #define CONFIDENCE_THRESHOLD 30.
+#define MIN_CHARACTER_COUNT 2
+const tesseract::PageIteratorLevel RESULT_ITER_MODE = tesseract::RIL_WORD;
 
 OCRMatch *findWordCoordinates(const char *image_path, int *size) {
   auto boxes = extractTextCoordinates(image_path);
@@ -49,7 +51,7 @@ std::vector<OCRMatch> extractTextCoordinates(const char *imagePath) {
   tesseract->Recognize(0);
 
   tesseract::ResultIterator *iterator = tesseract->GetIterator();
-  tesseract::PageIteratorLevel level = tesseract::RIL_TEXTLINE;
+  auto level = RESULT_ITER_MODE;
 
   if (iterator != 0) {
     do {
@@ -58,9 +60,9 @@ std::vector<OCRMatch> extractTextCoordinates(const char *imagePath) {
       int x1, y1, x2, y2;
       iterator->BoundingBox(level, &x1, &y1, &x2, &y2);
 
-      if (conf > CONFIDENCE_THRESHOLD && word != nullptr && strlen(word) >= 2) {
-        OCRMatch box{x1, y1, x2, y2, word};
-        results.push_back(box);
+      if (conf > CONFIDENCE_THRESHOLD && word != nullptr &&
+          strlen(word) >= MIN_CHARACTER_COUNT) {
+        results.push_back(OCRMatch{x1, y1, x2, y2, word});
       }
     } while (iterator->Next(level));
   }

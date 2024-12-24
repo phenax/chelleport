@@ -1,8 +1,8 @@
-module Chelleport.OCR (getWordsOnScreen) where
+module Chelleport.OCR (MonadOCR (..)) where
 
 import Chelleport.Types
 import Control.Monad.IO.Class (MonadIO (liftIO))
-import Control.Monad.RWS (asks)
+import Control.Monad.RWS (MonadReader (ask))
 import qualified Data.ByteString as BS
 import Foreign (Bits (shiftR), Ptr, Storable (peek, pokeByteOff), alloca, allocaBytes, peekArray, (.&.))
 import Foreign.C (CInt, CString, newCString)
@@ -15,48 +15,39 @@ import System.IO (hPutStrLn)
 import System.IO.Temp (emptySystemTempFile)
 
 foreign import ccall unsafe "libchelleport.h findWordCoordinates"
-  c_findWordCoordinates :: CString -> Ptr CInt -> IO (Ptr OCRMatch)
+  c_getAllWordCoordinates :: CString -> Ptr CInt -> IO (Ptr OCRMatch)
 
 class (Monad m) => MonadOCR m where
   getWordsOnScreen :: m [OCRMatch]
 
 instance (MonadIO m) => MonadOCR (AppM m) where
   getWordsOnScreen = do
-    SDL.V2 width height <- asks ctxWindow >>= SDL.get . SDL.windowSize
-    SDL.V2 x y <- asks ctxWindow >>= SDL.getWindowAbsolutePosition
+    ctx <- ask
+    SDL.V2 width height <- SDL.get . SDL.windowSize . ctxWindow $ ctx
+    SDL.V2 x y <- SDL.getWindowAbsolutePosition . ctxWindow $ ctx
     liftIO $ do
-      imgFilePath <- liftIO $ createTemporaryScreenshot (x, y) (width, height)
+      imgFilePath <- liftIO $ createTemporaryScreenshot ctx (x, y) (width, height)
       findWordCoordinates imgFilePath <* removeFile imgFilePath
 
 findWordCoordinates :: String -> IO [OCRMatch]
 findWordCoordinates imgPath = alloca $ \sizePtr -> do
   imgPathC <- newCString imgPath
-  arrayPtr <- c_findWordCoordinates imgPathC sizePtr
+  arrayPtr <- c_getAllWordCoordinates imgPathC sizePtr
 
   size <- peek sizePtr
   peekArray (fromIntegral size) arrayPtr
 
-createTemporaryScreenshot :: (CInt, CInt) -> (CInt, CInt) -> IO String
-createTemporaryScreenshot offset size = do
+createTemporaryScreenshot :: DrawContext -> (CInt, CInt) -> (CInt, CInt) -> IO String
+createTemporaryScreenshot ctx offset size = do
   tmpFilePath <- emptySystemTempFile "chelleport-screenshot.png"
-  screenshot tmpFilePath offset size
+  screenshot ctx tmpFilePath offset size
   pure tmpFilePath
 
-screenshot :: String -> (CInt, CInt) -> (CInt, CInt) -> IO ()
-screenshot filename (offsetX, offsetY) (width, height) = do
-  dpy <- X11.openDisplay ""
-  root <- X11.rootWindow dpy (X11.defaultScreen dpy)
+screenshot :: DrawContext -> String -> (CInt, CInt) -> (CInt, CInt) -> IO ()
+screenshot (DrawContext {ctxX11Display = display}) filename (offsetX, offsetY) (width, height) = do
+  root <- X11.rootWindow display (X11.defaultScreen display)
 
-  image <-
-    X11.getImage
-      dpy
-      root
-      offsetX
-      offsetY
-      (fromIntegral width)
-      (fromIntegral height)
-      (fromIntegral X11.allPlanes_aux)
-      X11.zPixmap
+  image <- X11.getImage display root offsetX offsetY (fromIntegral width) (fromIntegral height) (fromIntegral X11.allPlanes_aux) X11.zPixmap
 
   allocaBytes (fromIntegral $ width * height * 3) $ \ptr -> do
     let getPixel :: CInt -> CInt -> IO ()
@@ -74,7 +65,6 @@ screenshot filename (offsetX, offsetY) (width, height) = do
     savePPMFile filename (fromIntegral width) (fromIntegral height) rgbData
 
   X11.destroyImage image
-  X11.closeDisplay dpy
 
 savePPMFile :: FilePath -> Int -> Int -> BS.ByteString -> IO ()
 savePPMFile path width height rgbData = withFile path WriteMode $ \h -> do

@@ -1,5 +1,3 @@
-#include <string>
-
 // NOTE: Remember to update size and alignment in ocr hs module on change
 struct OCRMatch {
   int startX, startY;

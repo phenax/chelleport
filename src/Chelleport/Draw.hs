@@ -14,6 +14,7 @@ class (Monad m) => MonadDraw m where
   drawLine :: (CInt, CInt) -> (CInt, CInt) -> m ()
   drawText :: (CInt, CInt) -> Color -> Text -> m (CInt, CInt)
   drawCircle :: Int -> (CInt, CInt) -> m ()
+  fillRect :: (CInt, CInt) -> (CInt, CInt) -> m ()
   setDrawColor :: Color -> m ()
   windowSize :: m (CInt, CInt)
   windowPosition :: m (CInt, CInt)
@@ -26,6 +27,11 @@ instance (MonadIO m) => MonadDraw (AppM m) where
   setDrawColor color = do
     renderer <- asks ctxRenderer
     SDL.rendererDrawColor renderer $= color
+
+  fillRect (x, y) (w, h) = do
+    renderer <- asks ctxRenderer
+    let rect = SDL.Rectangle (SDL.P $ SDL.V2 x y) (SDL.V2 w h)
+    SDL.fillRect renderer (Just rect)
 
   drawText (x, y) color text = do
     DrawContext {ctxRenderer = renderer, ctxFont = font} <- ask
@@ -64,6 +70,9 @@ instance (MonadIO m) => MonadDraw (AppM m) where
   windowPosition = do
     SDL.V2 x y <- asks ctxWindow >>= SDL.getWindowAbsolutePosition
     pure (x, y)
+
+fillRectVertices :: (MonadDraw m) => (CInt, CInt) -> (CInt, CInt) -> m ()
+fillRectVertices (x1, y1) (x2, y2) = fillRect (x1, y1) (x2 - x1, y2 - y1)
 
 cellSize :: (MonadDraw m) => State -> m (CInt, CInt)
 cellSize (State {stateGrid}) = do

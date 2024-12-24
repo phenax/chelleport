@@ -64,10 +64,10 @@ instance (MonadIO m) => MonadControl (AppM m) where
       X11.sync display False
 
 isKeyPressed :: SDL.KeyboardEventData -> Bool
-isKeyPressed = (== SDL.Pressed) . SDL.keyboardEventKeyMotion
+isKeyPressed = (SDL.Pressed ==) . SDL.keyboardEventKeyMotion
 
 isKeyRelease :: SDL.KeyboardEventData -> Bool
-isKeyRelease = (== SDL.Released) . SDL.keyboardEventKeyMotion
+isKeyRelease = (SDL.Released ==) . SDL.keyboardEventKeyMotion
 
 eventToKeycode :: SDL.KeyboardEventData -> SDL.Keycode
 eventToKeycode = SDL.keysymKeycode . SDL.keyboardEventKeysym

@@ -35,18 +35,19 @@ type EventHandler state appAction = state -> SDL.Event -> Maybe appAction
 
 type View m state = state -> m ()
 
-type Initializer m state = m state
+type Initializer m state appAction = m (state, Maybe appAction)
 
 setupAppShell ::
   (MonadIO m) =>
   DrawContext ->
-  Initializer m state ->
+  Initializer m state appAction ->
   Update m state appAction ->
   EventHandler state appAction ->
   View m state ->
   m ()
-setupAppShell (DrawContext {ctxRenderer = renderer}) getInitState update eventHandler draw =
-  getInitState >>= appLoop
+setupAppShell (DrawContext {ctxRenderer = renderer}) getInitState update eventHandler draw = do
+  state <- getInitState >>= evalUpdateResult
+  appLoop state
   where
     appLoop currentState = do
       SDL.rendererDrawColor renderer $= colorBackground

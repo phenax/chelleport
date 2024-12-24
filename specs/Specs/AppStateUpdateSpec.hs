@@ -2,7 +2,7 @@ module Specs.AppStateUpdateSpec where
 
 import Chelleport (initialState, update)
 import Chelleport.Types
-import Chelleport.Utils (intToCInt, uniq)
+import Chelleport.Utils (uniq)
 import Control.Monad (join)
 import qualified SDL
 import Test.Hspec
@@ -12,32 +12,23 @@ test :: SpecWith ()
 test = do
   describe "#initialState" $ do
     it "returns the initial state of the app" $ do
-      (initState, _) <- runWithMocks initialState
+      ((initState, _), _) <- runWithMocks initialState
       stateKeySequence initState `shouldBe` []
       stateIsMatched initState `shouldBe` False
       stateIsShiftPressed initState `shouldBe` False
 
     it "returns grid with 16x9 key sequences" $ do
-      (initState, _) <- runWithMocks initialState
+      ((initState, _), _) <- runWithMocks initialState
       length (stateGrid initState) `shouldBe` 9
       stateGrid initState `shouldSatisfy` all ((== 16) . length)
       stateGrid initState `shouldSatisfy` all (all ((== 2) . length))
 
     it "returns grid with all unique key sequences" $ do
-      (initState, _) <- runWithMocks initialState
+      ((initState, _), _) <- runWithMocks initialState
       join (stateGrid initState) `shouldBe` uniq (join $ stateGrid initState)
 
   describe "#update" $ do
-    let defaultState =
-          State
-            { stateKeySequence = [],
-              stateIsShiftPressed = False,
-              stateIsMatched = False,
-              stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]],
-              stateRepetition = 1,
-              stateIsDragging = False,
-              stateMode = ModeHints
-            }
+    let defaultState = defaultAppState {stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]]}
 
     context "with action HandleKeyInput" $ do
       context "when there are no matches" $ do
@@ -63,9 +54,9 @@ test = do
             ((nextState, _), _) <- runWithMocks $ update currentState $ HandleKeyInput SDL.KeycodeF
             nextState `shouldBe` currentState {stateKeySequence = "DEF", stateIsMatched = True}
 
-          it "continues with MoveMousePosition action" $ do
+          it "continues with MoveMousePosition action at center of matched cell" $ do
             ((_, action), _) <- runWithMocks $ update currentState $ HandleKeyInput SDL.KeycodeF
-            action `shouldBe` Just (MoveMousePosition (0, 1))
+            action `shouldBe` Just (MoveMousePosition (1640, 370))
 
     context "with action TriggerMouseClick" $ do
       let currentState = defaultState
@@ -185,16 +176,10 @@ test = do
 
     context "with action MoveMousePosition" $ do
       let currentState = defaultState
-      let rows = intToCInt $ length $ stateGrid currentState
-      let columns = intToCInt $ length $ head $ stateGrid currentState
 
-      -- TODO: Test with inline mocked values
-      it "moves mouse pointer to center of cell of given coordinates" $ do
-        (_, mock) <- runWithMocks $ update currentState $ MoveMousePosition (0, 0)
-        mock
-          `shouldHaveCalled` Mock_moveMousePointer
-            (mockWindowOffsetX + mockWindowWidth `div` columns `div` 2)
-            (mockWindowOffsetY + mockWindowHeight `div` rows `div` 2)
+      it "moves mouse pointer to the given coordinates" $ do
+        (_, mock) <- runWithMocks $ update currentState $ MoveMousePosition (23, 320)
+        mock `shouldHaveCalled` Mock_moveMousePointer 23 320
 
       it "does not continue or update state" $ do
         (result, _) <- runWithMocks $ update currentState $ MoveMousePosition (0, 0)
@@ -211,28 +196,27 @@ test = do
     context "with action IncrementMouseCursor" $ do
       let currentState = defaultState
 
-      -- TODO: Test with inline mocked values
-      it "increments mouse position relative to current position" $ do
-        (_, mock) <- runWithMocks $ update currentState $ IncrementMouseCursor (10, -5)
-        mock `shouldHaveCalled` Mock_moveMousePointer 52 37
+      it "continues with MoveMousePosition" $ do
+        ((_, action), _) <- runWithMocks $ update currentState $ IncrementMouseCursor (10, -5)
+        action `shouldBe` Just (MoveMousePosition (52, 37))
 
-      it "does not continue or update state" $ do
-        (result, _) <- runWithMocks $ update currentState $ IncrementMouseCursor (0, 0)
-        result `shouldBe` (currentState, Nothing)
+      it "does update state" $ do
+        ((state, _), _) <- runWithMocks $ update currentState $ IncrementMouseCursor (10, -5)
+        state `shouldBe` currentState
 
       context "when repetition is more than 1" $ do
         let currentState = defaultState {stateRepetition = 5}
 
         it "multiplies increment" $ do
-          (_, mock) <- runWithMocks $ update currentState $ IncrementMouseCursor (10, -5)
-          mock `shouldHaveCalled` Mock_moveMousePointer 92 17
+          ((_, action), _) <- runWithMocks $ update currentState $ IncrementMouseCursor (10, -5)
+          action `shouldBe` Just (MoveMousePosition (92, 17))
 
       context "when repetition is 0" $ do
         let currentState = defaultState {stateRepetition = 0}
 
         it "increments just once" $ do
-          (_, mock) <- runWithMocks $ update currentState $ IncrementMouseCursor (10, -5)
-          mock `shouldHaveCalled` Mock_moveMousePointer 52 37
+          ((_, action), _) <- runWithMocks $ update currentState $ IncrementMouseCursor (10, -5)
+          action `shouldBe` Just (MoveMousePosition (52, 37))
 
     context "with action ShutdownApp" $ do
       let currentState = defaultState
