@@ -9,11 +9,16 @@ build-type:      Simple
 synopsis:        Mouse control
 description:     Mouse control
 
+source-repository head
+  type:     git
+  location: https://github.com/phenax/chelleport.git
+
 common common-config
   default-extensions:
     ExplicitForAll
     FlexibleContexts
     FlexibleInstances
+    ForeignFunctionInterface
     GADTs
     GeneralizedNewtypeDeriving
     LambdaCase
@@ -31,6 +36,9 @@ common common-config
     time,
     mtl == 2.3.1,
     sdl2 == 2.5.5.0,
+    array,
+    temporary,
+    directory,
     containers
 
 common warnings
@@ -38,17 +46,24 @@ common warnings
     -Wall -Wincomplete-record-updates -Wincomplete-uni-patterns
     -Wunused-foralls -Wextra -Wno-unused-do-bind -Wname-shadowing
     -fwarn-tabs -fprint-explicit-foralls -fprint-explicit-kinds
-  extra-libraries: Xtst X11
+
+common extension
+  extra-libraries: stdc++ Xtst X11 tesseract leptonica
+  include-dirs: include
+  c-sources: cpp/libchelleport.cpp
+  extra-source-files:
+    cpp/*.cpp
+    include/*.h
+    static/font.ttf
 
 executable chelleport
-  import: common-config, warnings
+  import: common-config, warnings, extension
   hs-source-dirs: bin
   main-is: Main.hs
   build-depends: lib-chelleport
-  -- other-modules:
 
 library lib-chelleport
-  import: common-config, warnings
+  import: common-config, warnings, extension
   hs-source-dirs: src
   build-depends:
     bytestring,
@@ -64,12 +79,13 @@ library lib-chelleport
     Chelleport.Control
     Chelleport.Draw
     Chelleport.KeySequence
+    Chelleport.OCR
     Chelleport.Types
     Chelleport.Utils
     Chelleport.View
 
 test-suite specs
-  import: common-config, warnings
+  import: common-config, warnings, extension
   type: exitcode-stdio-1.0
   hs-source-dirs: specs
   main-is: Main.hs

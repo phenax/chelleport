@@ -11,14 +11,6 @@ import SDL (($=))
 import qualified SDL
 import qualified SDL.Font as TTF
 
--- benchmark :: String -> IO a -> IO a
--- benchmark msg m = do
---   start <- systemNanoseconds <$> getSystemTime
---   result <- m
---   end <- systemNanoseconds <$> getSystemTime
---   Debug.traceM $ msg ++ ": " ++ show (end - start)
---   pure result
-
 initializeContext :: IO DrawContext
 initializeContext = do
   -- Initialize SDL

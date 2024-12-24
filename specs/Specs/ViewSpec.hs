@@ -15,7 +15,8 @@ test = do
             stateIsMatched = False,
             stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]],
             stateRepetition = 1,
-            stateIsDragging = False
+            stateIsDragging = False,
+            stateMode = ModeHints
           }
   let drawTextCalls = filter (\case Mock_drawText {} -> True; _ -> False) . calls
 

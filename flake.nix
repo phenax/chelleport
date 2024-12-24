@@ -19,6 +19,8 @@
               ./bin
               ./src
               ./specs
+              ./include
+              ./cpp
               ./chelleport.cabal
             ];
           });
@@ -33,6 +35,18 @@
             xorg.libX11
             SDL2
             SDL2_ttf
+            tesseract
+            leptonica
+            imagemagick
+
+            gcc
+            pkg-config
+          ];
+
+          devPackages = with pkgs; [
+            just
+            nodemon
+            clang-tools
           ];
         in {
           haskellProjects.default = {
@@ -69,10 +83,7 @@
             inputsFrom = [
               config.haskellProjects.default.outputs.devShell
             ];
-            packages = with pkgs; [
-              just
-              nodemon
-            ];
+            packages = devPackages;
             inherit buildInputs;
 
             LD_LIBRARY_PATH = "${pkgs.lib.makeLibraryPath buildInputs}";

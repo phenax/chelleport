@@ -23,6 +23,14 @@ import Control.Monad.Reader (ReaderT (runReaderT))
 import Data.Maybe (fromMaybe, isJust)
 import qualified SDL
 
+-- run :: IO ()
+-- run = do
+--   ctx <- initializeContext
+--   benchmark "ocr" $ do
+--     res <- (`runReaderT` ctx) . runAppM $ getWordsOnScreen
+--     print $ "---" ++ show (length res)
+--   pure ()
+
 run :: IO ()
 run = do
   ctx <- initializeContext
@@ -47,7 +55,8 @@ initialState = do
         stateIsMatched = False,
         stateIsShiftPressed = False,
         stateIsDragging = False,
-        stateRepetition = 1
+        stateRepetition = 1,
+        stateMode = ModeSearch
       }
   where
     rows = 9
