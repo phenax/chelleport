@@ -1,7 +1,6 @@
 * Current
   - ( ) Optimize speed of ocr
   --- Load incrementally?
-  - ( ) Preprocessing screenshot for better ocr
   - ( ) Add hjkl for search mode
   - ( ) Middle click
 
@@ -12,4 +11,5 @@
 
 * Maybe
   - ( ) Scroll
+  - ( ) Configuration
   - ( ) Process mode? Run in bg with root key binding to toggle

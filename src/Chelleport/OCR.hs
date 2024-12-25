@@ -30,8 +30,9 @@ instance (MonadIO m) => MonadOCR (AppM m) where
       threadDelay 20_000
       pure path
 
-  getWordsInImage filePath = do
-    liftIO $ findWordCoordinates filePath <* removeFile filePath
+  getWordsInImage filePath = liftIO $ do
+    print filePath
+    findWordCoordinates filePath <* removeFile filePath
 
 findWordCoordinates :: String -> IO [OCRMatch]
 findWordCoordinates imgPath = alloca $ \sizePtr -> do
@@ -43,7 +44,7 @@ findWordCoordinates imgPath = alloca $ \sizePtr -> do
 
 createTemporaryScreenshot :: DrawContext -> (CInt, CInt) -> (CInt, CInt) -> IO String
 createTemporaryScreenshot ctx offset size = do
-  tmpFilePath <- emptySystemTempFile "chelleport-screenshot.png"
+  tmpFilePath <- emptySystemTempFile "chelleport-screenshot.ppm"
   screenshot ctx tmpFilePath offset size
   pure tmpFilePath
 

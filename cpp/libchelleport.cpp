@@ -19,6 +19,8 @@ OCRMatch *findWordCoordinates(const char *image_path, int *size) {
   // for (const auto &match : matches)
   //   showMatch(match);
 
+  printf("Count: %ld\n", matches.size());
+
   *size = matches.size();
   return ptr;
 }
@@ -38,12 +40,16 @@ std::vector<OCRMatch> extractTextCoordinates(const char *imagePath) {
     return results;
   }
 
+  preprocessImage(&image);
+
+  // printf("imagePath: %s\n", imagePath);
+  // pixWrite(imagePath, image, IFF_JFIF_JPEG);
+
   tesseract->SetImage(image);
   tesseract->Recognize(0);
 
   tesseract::ResultIterator *iterator = tesseract->GetIterator();
   auto level = RESULT_ITER_MODE;
-  int x1, y1, x2, y2;
 
   if (iterator != 0) {
     do {
@@ -52,8 +58,11 @@ std::vector<OCRMatch> extractTextCoordinates(const char *imagePath) {
 
       if (conf > CONFIDENCE_THRESHOLD && word != nullptr &&
           strlen(word) >= MIN_CHARACTER_COUNT) {
+        int x1, y1, x2, y2;
         iterator->BoundingBox(level, &x1, &y1, &x2, &y2);
-        results.push_back(OCRMatch{x1, y1, x2, y2, word});
+        results.push_back(
+            OCRMatch{(int)(x1 / scaleFactor), (int)(y1 / scaleFactor),
+                     (int)(x2 / scaleFactor), (int)(y2 / scaleFactor), word});
       }
     } while (iterator->Next(level));
   }
@@ -64,6 +73,34 @@ std::vector<OCRMatch> extractTextCoordinates(const char *imagePath) {
   pixDestroy(&image);
 
   return results;
+}
+
+void preprocessImage(Pix **image) {
+  Pix *temp;
+
+  // Scale
+  if (scaleFactor != 1) {
+    temp = pixScale(*image, scaleFactor, scaleFactor);
+    pixDestroy(image);
+    *image = temp;
+  }
+
+  // Grayscale
+  if (pixGetDepth(*image) > 8) {
+    temp = pixConvertRGBToGray(*image, grayscaleWeightRed, grayscaleWeightGreen,
+                               grayscaleWeightBlue);
+    pixDestroy(image);
+    *image = temp;
+  }
+
+  // Contrast
+  pixContrastTRC(*image, *image, contrast);
+
+  // Sharpness
+  // temp = pixUnsharpMaskingGrayFast(*image, 1, sharpness, 1);
+  temp = pixUnsharpMasking(*image, 1, sharpness);
+  pixDestroy(image);
+  *image = temp;
 }
 
 void showMatch(const OCRMatch &match) {

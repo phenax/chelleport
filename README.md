@@ -1,35 +1,57 @@
 # Chelleport
-Control your mouse pointer with your keyboard
+Control your mouse pointer entirely with your keyboard.
 
-> Note: So far it only supports Linux running X11 display server with a compositor, because that's what I use. Might look into supporting more systems if there is interest.
+> Note: Current it only supports Linux running X11 display server with a compositor, because that's what I use. Might look into supporting more systems if there is interest.
+
+
+## Modes
+- **Labelled Hints mode (default. `ctrl+h`)**: Displays a grid overlay on your screen, where each cell is labeled with a unique two-key combination. Press the corresponding keys to move the cursor to the desired cell.
+- **Text Search mode (`ctrl+s`)**: Uses OCR to identify and highlight words on the screen, allowing you to search for text and move the cursor directly to matching text.
+
+
+## Features
+- **Search by text**:
+  - Use OCR to locate any visible text on the screen and position your cursor precisely.
+- **Click**:
+  - Press `space` left clicks at current mouse position.
+  - Press `shift+space` left clicks and show the grid again.
+- **Select text/Drag-n-drop**:
+  - Press `ctrl+v` starts dragging/selecting/holding down left mouse button.
+  - Press `space` to stop dragging.
+  - Press `ctrl+v` again to stop dragging and show the grid again.
+- **Double click**:
+  - Press `2` followed by `space` will click twice.
+  - Any digit key followed by `space` will click that many times.
+- **Right click**:
+  - Pressing `minus` key right clicks at current mouse position.
+  - Holding `shift` key right clicks and shows the grid again.
+- **Granular movement**:
+  - Once you match with a label on the screen, you can use `hjkl` keys to move your cursor.
+  - Holding `shift` key will use bigger steps for movements.
+  - You can also repeat movement by pressing a digit before the movement. Eg: `5k` moves 5 small steps up. `5K` moves 5 big steps up.
+
 
 https://github.com/user-attachments/assets/93ddc1ff-6cbe-4be4-9507-d68de880212a
 
-## Features
-- **Text search mode**: Pressing `<c-s>` puts you in search mode which uses OCR to find words on the screen that you can search and move your cursor to.
-- **Labelled hints mode**: This is the default mode. It shows a grid on the screen with 2 keys for each cell. You can move to any cell by pressing the keys shown.
-- **Click**: Pressing `space` left clicks at current mouse position. Holding `shift` key left clicks and show the grid again.
-- **Select text/Drag-n-drop**: Pressing `Ctrl+V` starts dragging/selecting/holding down left mouse button. Press `space` to stop dragging. Or press `Ctrl+V` again to stop dragging and show the grid again.
-- **Double click**: Pressing `2` followed by `space` will click twice. Any digit key followed by `space` will click that many times.
-- **Right click**: Pressing `minus` key right clicks at current mouse position. Holding `shift` key right clicks and shows the grid again.
-- **Granular movement**: Once you match with a label on the screen, you can use `hjkl` keys to move your cursor. Holding `shift` key will use bigger steps for movements. You can also repeat movement by pressing a digit before the movement. Eg: `5k` moves 5 small steps up. `5K` moves 5 big steps up.
-
 
 ## Install
-- Clone the repo and build it yourself: `cabal build chelleport`
+- Clone the repo and build it yourself: `cabal build chelleport` or `nix build`
 - Nix flakes users can try it out by running: `nix run github:phenax/chelleport#chelleport`
 
 
 ## Usage
 Use [sxhkd](https://github.com/baskerville/sxhkd), [shotkey](https://github.com/phenax/shotkey), your window manager or any other key binding manager to set up a keybinding for `chelleport`.
 
-### Hints mode (default. `<c-h>` to switch to hints mode)
+### Hints mode (`ctrl-h` to switch to hints mode)
 - With the grid open, type any of the key sequences shown on the grid to move the pointer there
-- Once a match is found, you can now use `hjkl` keys to make smaller movements. Hold `shift` to move in bigger increments.
+- Once a match is found, you can now use `hjkl` keys to make smaller movements. Hold `shift` + `hjkl` to move in bigger increments.
 - Press `space` to click
 
-### Search mode (`<c-s>` to switch to search mode)
+### Search mode (`ctrl-s` to switch to search mode)
 - Words that are recognized by OCR will be highlighted
 - Type the characters in one of the words to move the cursor to it
-- Press `<c-n>` & `<c-p>` to go to next/previous match respectively
+- Press `ctrl-n` & `ctrl-p` to go to next/previous match respectively
 
+
+## Feedback and Support
+Interested in extending platform compatibility or new features? Let me know! Contributions and suggestions are welcome.
