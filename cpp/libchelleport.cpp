@@ -1,19 +1,20 @@
-#include <algorithm>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
 #include <leptonica/allheaders.h>
+#include <memory>
+#include <ostream>
 #include <tesseract/baseapi.h>
+#include <thread>
 #include <vector>
 
+#include "../include/image.h"
 #include "../include/libchelleport.h"
+#include "../include/recognizer.h"
 
+extern "C" {
 OCRMatch *findWordCoordinates(const char *image_path, int *size) {
   std::vector<OCRMatch> matches;
-  MEASURE("OCR", { matches = extractTextCoordinates(image_path); });
+  MEASURE("OCR", { matches = extractTextMatches(image_path); });
 
-  std::cout << "Word count: " << matches.size() << std::endl;
+  std::cout << "Match count: " << matches.size() << std::endl;
 
   static OCRMatch *ptr = new OCRMatch[matches.size()];
   std::copy(matches.begin(), matches.end(), ptr);
@@ -21,101 +22,60 @@ OCRMatch *findWordCoordinates(const char *image_path, int *size) {
   *size = matches.size();
   return ptr;
 }
+}
 
-std::vector<OCRMatch> extractTextCoordinates(const char *imagePath) {
+std::vector<OCRMatch> extractTextMatches(const char *imagePath) {
   std::vector<OCRMatch> results;
 
-  auto tesseract = initializeTesseract();
-  if (tesseract == nullptr)
-    return results;
-
-  Pix *image = loadImage(imagePath);
+  Pix *image = image::loadImage(imagePath);
   if (image == nullptr)
     return results;
 
   // printf("imagePath: %s\n", imagePath);
   // pixWrite(imagePath, image, IFF_JFIF_JPEG);
 
-  tesseract->SetImage(image);
-  tesseract->Recognize(0);
+  int width = pixGetWidth(image);
+  int height = pixGetHeight(image);
 
-  tesseract::ResultIterator *iterator = tesseract->GetIterator();
-  auto level = RESULT_ITER_MODE;
+  std::vector<std::unique_ptr<Recognizer>> recognizers;
+  recognizers.push_back(
+      std::make_unique<Recognizer>(0, 0, width / 2, height / 2));
 
-  if (iterator != 0) {
-    do {
-      if (iterator->Confidence(level) > CONFIDENCE_THRESHOLD) {
-        const char *word = iterator->GetUTF8Text(level);
+  recognizers.push_back(
+      std::make_unique<Recognizer>(width / 2, 0, width / 2, height / 2));
 
-        if (word != nullptr && strlen(word) >= MIN_CHARACTER_COUNT) {
-          int x1, y1, x2, y2;
-          iterator->BoundingBox(level, &x1, &y1, &x2, &y2);
-          OCRMatch match({(int)(x1 / scaleFactor), (int)(y1 / scaleFactor),
-                          (int)(x2 / scaleFactor), (int)(y2 / scaleFactor),
-                          word});
-          results.push_back(match);
-        }
-      }
-    } while (iterator->Next(level));
+  recognizers.push_back(
+      std::make_unique<Recognizer>(0, height / 2, width / 2, height / 2));
+
+  recognizers.push_back(std::make_unique<Recognizer>(width / 2, height / 2,
+                                                     width / 2, height / 2));
+
+  return runRecognizers(recognizers, image);
+}
+
+std::vector<OCRMatch>
+runRecognizers(std::vector<std::unique_ptr<Recognizer>> &recognizers,
+               Pix *image) {
+  std::vector<OCRMatch> results;
+  std::shared_ptr<Pix> sharedImage(image, [](Pix *p) { pixDestroy(&p); });
+
+  std::vector<std::thread> workers;
+  workers.reserve(recognizers.size());
+
+  for (auto &ext : recognizers) {
+    workers.push_back(std::thread(
+        [&ext, &sharedImage]() { ext->recognize(sharedImage.get()); }));
   }
 
-  delete iterator;
-  tesseract->End();
-  delete tesseract;
-  pixDestroy(&image);
+  for (std::thread &t : workers) {
+    if (t.joinable())
+      t.join();
+  }
+
+  for (auto &ext : recognizers) {
+    for (auto &match : ext->getResults())
+      results.push_back(match);
+  }
 
   return results;
-}
-
-inline tesseract::TessBaseAPI *initializeTesseract() {
-  auto *tesseract = new tesseract::TessBaseAPI();
-  tesseract->SetPageSegMode(tesseract::PSM_AUTO);
-
-  if (tesseract->Init(nullptr, "eng", tesseract::OEM_LSTM_ONLY)) {
-    std::cerr << "Could not initialize tesseract." << std::endl;
-    return nullptr;
-  }
-
-  return tesseract;
-}
-
-inline Pix *loadImage(const char *imagePath) {
-  Pix *image = pixRead(imagePath);
-  if (!image) {
-    std::cerr << "Could not load image " << imagePath << std::endl;
-    return nullptr;
-  }
-
-  preprocessImage(&image);
-
-  return image;
-}
-
-void preprocessImage(Pix **image) {
-  Pix *temp;
-
-  // Scale
-  if (scaleFactor != 1) {
-    INLINE_IMAGE_PROC(pixScale(*image, scaleFactor, scaleFactor));
-  }
-
-  // Grayscale
-  if (pixGetDepth(*image) > 8) {
-    INLINE_IMAGE_PROC(pixConvertRGBToGray(
-        *image, grayscaleWeightRed, grayscaleWeightGreen, grayscaleWeightBlue));
-  }
-
-  // Contrast
-  pixContrastTRC(*image, *image, contrast);
-
-  // Sharpness
-  // INLINE_IMAGE_PROC(pixUnsharpMaskingGrayFast(*image, 1, sharpness, 1));
-  INLINE_IMAGE_PROC(pixUnsharpMasking(*image, 1, sharpness));
-}
-
-void printMatch(const OCRMatch &match) {
-  std::cout << "Text: " << match.text << "; Position: (" << match.startX << ","
-            << match.startY << ") -> (" << match.endX << "," << match.endY
-            << ")" << std::endl
-            << std::endl;
 }

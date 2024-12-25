@@ -50,7 +50,10 @@ common warnings
 common extension
   extra-libraries: stdc++ Xtst X11 tesseract leptonica
   include-dirs: include
-  c-sources: cpp/libchelleport.cpp
+  c-sources:
+    cpp/libchelleport.cpp
+    cpp/recognizer.cpp
+    cpp/image.cpp
   cxx-options: -O3 -ffast-math -march=native
   extra-source-files:
     cpp/*.cpp

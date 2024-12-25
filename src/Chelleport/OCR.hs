@@ -1,7 +1,6 @@
 module Chelleport.OCR (MonadOCR (..)) where
 
 import Chelleport.Types
-import Chelleport.Utils (benchmark)
 import Control.Concurrent (threadDelay)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.RWS (MonadReader (ask))
