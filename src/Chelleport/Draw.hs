@@ -1,7 +1,7 @@
 module Chelleport.Draw where
 
 import Chelleport.Types
-import Chelleport.Utils (intToCInt)
+import Chelleport.Utils (cIntToInt, intToCInt)
 import Control.Monad.Reader (MonadIO, MonadReader (ask), asks)
 import Data.Text (Text)
 import qualified Data.Vector.Storable as Vector
@@ -83,6 +83,26 @@ cellSize (State {stateGrid}) = do
   let wcell = width `div` intToCInt (length $ head stateGrid)
   let hcell = height `div` intToCInt (length stateGrid)
   pure (wcell, hcell)
+
+pointerPositionIncrement :: (MonadDraw m) => State -> m (CInt, CInt)
+pointerPositionIncrement state = do
+  (wcell, hcell) <- cellSize state
+  if stateIsShiftPressed state
+    then pure (wcell `div` 4, hcell `div` 4)
+    else pure (wcell `div` 16, hcell `div` 16)
+
+screenPositionFromCellPosition :: (MonadDraw m) => State -> (Int, Int) -> m (Int, Int)
+screenPositionFromCellPosition state (row, col) = do
+  (wcell, hcell) <- cellSize state
+  let x = (wcell `div` 2) + wcell * intToCInt col
+  let y = (hcell `div` 2) + hcell * intToCInt row
+  (winx, winy) <- windowPosition
+  pure (cIntToInt $ winx + x, cIntToInt $ winy + y)
+
+wordPosition :: (MonadDraw m) => OCRMatch -> m (Int, Int)
+wordPosition (OCRMatch {matchStartX, matchStartY}) = do
+  (x, y) <- windowPosition
+  pure (cIntToInt $ x + matchStartX, cIntToInt $ y + matchStartY)
 
 drawHorizontalLine :: (MonadDraw m) => CInt -> m ()
 drawHorizontalLine y = do

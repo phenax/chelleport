@@ -18,10 +18,10 @@ test = do
       it "draws matching text labels" $ do
         (_, mock) <- runWithMocks $ render currentState
         drawTextCalls mock
-          `shouldBe` [ Mock_drawText (460, 10) colorWhite "ABC",
-                       Mock_drawText (1420, 10) colorWhite "DEF",
-                       Mock_drawText (460, 550) colorWhite "DJK",
-                       Mock_drawText (1420, 550) colorWhite "JKL"
+          `shouldBe` [ Mock_drawText (460, 10) colorWhite FontLG "ABC",
+                       Mock_drawText (1420, 10) colorWhite FontLG "DEF",
+                       Mock_drawText (460, 550) colorWhite FontLG "DJK",
+                       Mock_drawText (1420, 550) colorWhite FontLG "JKL"
                      ]
 
     context "when there is a partial match" $ do
@@ -30,10 +30,10 @@ test = do
       it "draws matching text labels" $ do
         (_, mock) <- runWithMocks $ render currentState
         drawTextCalls mock
-          `shouldBe` [ Mock_drawText (1420, 10) colorLightGray "D",
-                       Mock_drawText (1430, 10) colorAccent "EF",
-                       Mock_drawText (460, 550) colorLightGray "D",
-                       Mock_drawText (470, 550) colorAccent "JK"
+          `shouldBe` [ Mock_drawText (1420, 10) colorLightGray FontLG "D",
+                       Mock_drawText (1430, 10) colorAccent FontLG "EF",
+                       Mock_drawText (460, 550) colorLightGray FontLG "D",
+                       Mock_drawText (470, 550) colorAccent FontLG "JK"
                      ]
 
     context "when key sequence is complete match" $ do
@@ -41,14 +41,14 @@ test = do
 
       it "draws only the matching label" $ do
         (_, mock) <- runWithMocks $ render currentState
-        drawTextCalls mock `shouldBe` [Mock_drawText (1420, 10) colorLightGray "DEF"]
+        drawTextCalls mock `shouldBe` [Mock_drawText (1420, 10) colorLightGray FontLG "DEF"]
 
   describe "#renderKeySequence" $ do
     context "when there is a partial match" $ do
       it "draws the matched section and highlights the remaining characters" $ do
         (_, mock) <- runWithMocks $ renderKeySequence "ABC" "ABCDE" (0, 0)
         calls mock
-          `shouldBe` [Mock_drawText (0, 0) colorLightGray "ABC", Mock_drawText (3 * 10, 0) colorAccent "DE"]
+          `shouldBe` [Mock_drawText (0, 0) colorLightGray FontLG "ABC", Mock_drawText (3 * 10, 0) colorAccent FontLG "DE"]
 
       it "return true as the text is visible" $ do
         (isVisible, _) <- runWithMocks $ renderKeySequence "ABC" "ABCDE" (0, 0)
@@ -57,7 +57,7 @@ test = do
     context "when there is no input key sequence" $ do
       it "draws text as a single chunk" $ do
         (_, mock) <- runWithMocks $ renderKeySequence "" "ABCD" (0, 0)
-        calls mock `shouldBe` [Mock_drawText (0, 0) colorWhite "ABCD"]
+        calls mock `shouldBe` [Mock_drawText (0, 0) colorWhite FontLG "ABCD"]
 
       it "return true as the text is visible" $ do
         (isVisible, _) <- runWithMocks $ renderKeySequence "" "ABCD" (0, 0)

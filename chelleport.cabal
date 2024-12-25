@@ -78,6 +78,7 @@ library lib-chelleport
   exposed-modules:
     Chelleport
     Chelleport.AppShell
+    Chelleport.AppState
     Chelleport.Config
     Chelleport.Context
     Chelleport.Control
@@ -98,7 +99,7 @@ test-suite specs
     Mock
     TestUtils
     Specs.KeySequenceSpec
-    Specs.AppStateUpdateSpec
+    Specs.AppStateSpec
     Specs.AppEventSpec
     Specs.ViewSpec
   build-depends:

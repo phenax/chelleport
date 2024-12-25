@@ -65,18 +65,18 @@ defaultAppState =
 data AppAction
   = ChainMouseClick MouseButtonType
   | HandleKeyInput SDL.Keycode
+  | IncrementHighlightIndex Int
   | IncrementMouseCursor (Int, Int)
-  | MouseDragStart
   | MouseDragEnd
+  | MouseDragStart
   | MouseDragToggle
   | MoveMousePosition (Int, Int)
   | ResetKeys
+  | SetMode Mode
   | ShutdownApp
   | TriggerMouseClick MouseButtonType
-  | UpdateShiftState Bool
   | UpdateRepetition Int
-  | SetMode Mode
-  | IncrementHighlightIndex Int
+  | UpdateShiftState Bool
   deriving (Show, Eq)
 
 data FontSize = FontSM | FontLG deriving (Show, Eq)

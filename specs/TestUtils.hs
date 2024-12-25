@@ -4,6 +4,7 @@ import Chelleport.AppShell (MonadAppShell (..))
 import Chelleport.Control (MonadControl (..))
 import Chelleport.Draw (MonadDraw (..))
 import Chelleport.OCR (MonadOCR (..))
+import Chelleport.Types
 import Control.Monad (void)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.State (MonadState (state), StateT (runStateT))
@@ -55,7 +56,7 @@ instance (MonadIO m) => MonadControl (TestM m) where
 instance (MonadIO m) => MonadDraw (TestM m) where
   drawLine p1 p2 = registerMockCall $ Mock_drawLine p1 p2
   fillRect p size = registerMockCall $ Mock_fillRect p size
-  drawText p color text = (fromIntegral $ mockTextWidth * Text.length text, 0) <$ registerMockCall (Mock_drawText p color text)
+  drawText p color size text = (fromIntegral $ mockTextWidth * Text.length text, 0) <$ registerMockCall (Mock_drawText p color size text)
   drawCircle radius p = registerMockCall $ Mock_drawCircle radius p
   setDrawColor color = registerMockCall $ Mock_setDrawColor color
   windowSize = (mockWindowWidth, mockWindowHeight) <$ registerMockCall Mock_windowSize
@@ -67,4 +68,7 @@ instance (MonadIO m) => MonadAppShell (TestM m) where
   shutdownApp = registerMockCall Mock_shutdownApp
 
 instance (MonadIO m) => MonadOCR (TestM m) where
-  getWordsOnScreen = [] <$ registerMockCall Mock_getWordsOnScreen
+  captureScreenshot p size = "" <$ registerMockCall (Mock_captureScreenshot p size)
+  getWordsInImage filePath = [match] <$ registerMockCall (Mock_getWordsInImage filePath)
+    where
+      match = OCRMatch {matchStartX = 40, matchStartY = 5, matchEndX = 100, matchEndY = 20, matchText = "Wow"}

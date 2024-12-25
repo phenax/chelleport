@@ -6,7 +6,7 @@
 #include "./image.h"
 
 // OCR configuration
-#define CONFIDENCE_THRESHOLD 25.
+#define CONFIDENCE_THRESHOLD 20.
 #define MIN_CHARACTER_COUNT 3
 const tesseract::PageIteratorLevel ITER_LEVEL = tesseract::RIL_WORD;
 
