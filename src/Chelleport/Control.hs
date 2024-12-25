@@ -1,7 +1,8 @@
 module Chelleport.Control where
 
+import Chelleport.KeySequence (isKeycodeDigit, isValidKey)
 import Chelleport.Types
-import Chelleport.Utils (cIntToInt)
+import Chelleport.Utils
 import Control.Concurrent (threadDelay)
 import Control.Monad (unless)
 import Control.Monad.IO.Class (MonadIO (liftIO))
@@ -63,31 +64,35 @@ instance (MonadIO m) => MonadControl (AppM m) where
       xSimulateButtonEvent display X11.button1 False 0
       X11.sync display False
 
-isKeyPressed :: SDL.KeyboardEventData -> Bool
-isKeyPressed = (SDL.Pressed ==) . SDL.keyboardEventKeyMotion
-
-isKeyRelease :: SDL.KeyboardEventData -> Bool
-isKeyRelease = (SDL.Released ==) . SDL.keyboardEventKeyMotion
-
 eventToKeycode :: SDL.KeyboardEventData -> SDL.Keycode
 eventToKeycode = SDL.keysymKeycode . SDL.keyboardEventKeysym
-
-isKeyPressWith :: SDL.KeyboardEventData -> SDL.Keycode -> Bool
-isKeyPressWith keyboardEvent keyCode =
-  isKeyPressed keyboardEvent && eventToKeycode keyboardEvent == keyCode
-
-isKeyReleaseWith :: SDL.KeyboardEventData -> SDL.Keycode -> Bool
-isKeyReleaseWith keyboardEvent keyCode =
-  isKeyRelease keyboardEvent && eventToKeycode keyboardEvent == keyCode
 
 keyModifier :: SDL.KeyboardEventData -> SDL.KeyModifier
 keyModifier = SDL.keysymModifier . SDL.keyboardEventKeysym
 
-withShift :: SDL.KeyboardEventData -> Bool
-withShift ev = SDL.keyModifierLeftShift (keyModifier ev) || SDL.keyModifierRightShift (keyModifier ev)
+checkKey :: [SDL.KeyboardEventData -> Bool] -> SDL.KeyboardEventData -> Bool
+checkKey = (<&&>)
 
-withCtrl :: SDL.KeyboardEventData -> Bool
-withCtrl ev = SDL.keyModifierLeftCtrl (keyModifier ev) || SDL.keyModifierRightCtrl (keyModifier ev)
+pressed :: SDL.KeyboardEventData -> Bool
+pressed = (SDL.Pressed ==) . SDL.keyboardEventKeyMotion
+
+released :: SDL.KeyboardEventData -> Bool
+released = (SDL.Released ==) . SDL.keyboardEventKeyMotion
+
+key :: SDL.Keycode -> SDL.KeyboardEventData -> Bool
+key keycode = (keycode ==) . eventToKeycode
+
+ctrl :: SDL.KeyboardEventData -> Bool
+ctrl ev = SDL.keyModifierLeftCtrl (keyModifier ev) || SDL.keyModifierRightCtrl (keyModifier ev)
+
+shift :: SDL.KeyboardEventData -> Bool
+shift ev = SDL.keyModifierLeftShift (keyModifier ev) || SDL.keyModifierRightShift (keyModifier ev)
+
+anyDigit :: SDL.KeyboardEventData -> Bool
+anyDigit = isKeycodeDigit . eventToKeycode
+
+anyAlphanumeric :: SDL.KeyboardEventData -> Bool
+anyAlphanumeric = isValidKey . eventToKeycode
 
 directionalIncrement :: (CInt, CInt) -> Char -> (Int, Int)
 directionalIncrement (incX, incY) = \case

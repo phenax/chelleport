@@ -1,6 +1,7 @@
 module Chelleport.OCR (MonadOCR (..)) where
 
 import Chelleport.Types
+import Control.Concurrent (threadDelay)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.RWS (MonadReader (ask))
 import qualified Data.ByteString as BS
@@ -9,7 +10,6 @@ import Foreign.C (CInt, CString, newCString)
 import GHC.IO.Handle.FD (withFile)
 import GHC.IO.IOMode (IOMode (WriteMode))
 import qualified Graphics.X11 as X11
-import qualified SDL
 import System.Directory (removeFile)
 import System.IO (hPutStrLn)
 import System.IO.Temp (emptySystemTempFile)
@@ -18,16 +18,20 @@ foreign import ccall unsafe "libchelleport.h findWordCoordinates"
   c_getAllWordCoordinates :: CString -> Ptr CInt -> IO (Ptr OCRMatch)
 
 class (Monad m) => MonadOCR m where
-  getWordsOnScreen :: m [OCRMatch]
+  captureScreenshot :: (CInt, CInt) -> (CInt, CInt) -> m FilePath
+  getWordsInImage :: FilePath -> m [OCRMatch]
 
 instance (MonadIO m) => MonadOCR (AppM m) where
-  getWordsOnScreen = do
+  captureScreenshot (x, y) (width, height) = do
     ctx <- ask
-    SDL.V2 width height <- SDL.get . SDL.windowSize . ctxWindow $ ctx
-    SDL.V2 x y <- SDL.getWindowAbsolutePosition . ctxWindow $ ctx
     liftIO $ do
-      imgFilePath <- liftIO $ createTemporaryScreenshot ctx (x, y) (width, height)
-      findWordCoordinates imgFilePath <* removeFile imgFilePath
+      threadDelay 20_000
+      path <- createTemporaryScreenshot ctx (x, y) (width, height)
+      threadDelay 20_000
+      pure path
+
+  getWordsInImage filePath = do
+    liftIO $ findWordCoordinates filePath <* removeFile filePath
 
 findWordCoordinates :: String -> IO [OCRMatch]
 findWordCoordinates imgPath = alloca $ \sizePtr -> do

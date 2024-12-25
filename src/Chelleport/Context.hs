@@ -19,7 +19,7 @@ initializeContext = do
 
   window <- initializeWindow
   renderer <- initializeRenderer window
-  font <- loadFont
+  (fontSm, fontLg) <- loadFonts
 
   display <- X11.openDisplay ""
 
@@ -27,18 +27,21 @@ initializeContext = do
     DrawContext
       { ctxWindow = window,
         ctxRenderer = renderer,
-        ctxFont = font,
+        ctxFontLarge = fontLg,
+        ctxFontSmall = fontSm,
         ctxX11Display = display
       }
 
 rawFontData :: ByteString
 rawFontData = $(embedFileRelative "./static/font.ttf")
 
-loadFont :: IO TTF.Font
-loadFont = do
-  font <- TTF.decode rawFontData fontSize
-  TTF.setStyle font [TTF.Bold]
-  pure font
+loadFonts :: IO (TTF.Font, TTF.Font)
+loadFonts = do
+  fontSm <- TTF.decode rawFontData 14
+  TTF.setStyle fontSm [TTF.Bold]
+  fontLg <- TTF.decode rawFontData 24
+  TTF.setStyle fontLg [TTF.Bold]
+  pure (fontSm, fontLg)
 
 initializeRenderer :: SDL.Window -> IO SDL.Renderer
 initializeRenderer window = do

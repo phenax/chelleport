@@ -4,19 +4,22 @@ import Chelleport.AppShell (MonadAppShell (hideWindow, showWindow, shutdownApp),
 import Chelleport.Context (initializeContext)
 import Chelleport.Control
   ( MonadControl (clickMouseButton, getMousePointerPosition, moveMousePointer, pressMouseButton, releaseMouseButton),
+    anyAlphanumeric,
+    anyDigit,
+    checkKey,
+    ctrl,
     directionalIncrement,
     eventToKeycode,
-    isKeyPressWith,
-    isKeyPressed,
-    isKeyReleaseWith,
-    withCtrl,
-    withShift,
+    key,
+    pressed,
+    released,
+    shift,
   )
-import Chelleport.Draw (MonadDraw (windowPosition), cellSize)
-import Chelleport.KeySequence (findMatchPosition, generateGrid, isKeycodeDigit, isValidKey, keycodeToInt, nextChars, toKeyChar)
-import Chelleport.OCR (MonadOCR, getWordsOnScreen)
+import Chelleport.Draw (MonadDraw (windowPosition, windowSize), cellSize)
+import Chelleport.KeySequence (findMatchPosition, generateGrid, keycodeToInt, nextChars, toKeyChar)
+import Chelleport.OCR (MonadOCR (captureScreenshot), getWordsInImage)
 import Chelleport.Types
-import Chelleport.Utils (cIntToInt, clamp, intToCInt, isEmpty, isNotEmpty, itemAt)
+import Chelleport.Utils (cIntToInt, clamp, intToCInt, isEmpty, itemAt, (<||>))
 import qualified Chelleport.View
 import Control.Monad (forM_)
 import Control.Monad.IO.Class (MonadIO)
@@ -54,46 +57,37 @@ eventHandler state event =
   case SDL.eventPayload event of
     SDL.QuitEvent -> Just ShutdownApp
     SDL.KeyboardEvent ev
-      -- Escape
-      | isKeyPressWith ev SDL.KeycodeEscape ->
-          Just ShutdownApp
-      -- minus / underscore
-      | isKeyPressWith ev SDL.KeycodeMinus || isKeyPressWith ev SDL.KeycodeUnderscore ->
-          if withShift ev
-            then Just $ ChainMouseClick RightClick
-            else Just $ TriggerMouseClick RightClick
-      -- 0-9
-      | isKeycodeDigit (eventToKeycode ev) ->
-          Just $ UpdateRepetition (fromMaybe 0 $ keycodeToInt $ eventToKeycode ev)
-      -- Enable search mode
-      | withCtrl ev && isKeyPressWith ev SDL.KeycodeS ->
-          Just $ SetMode defaultSearchMode
-      -- Enable hints mode
-      | withCtrl ev && isKeyPressWith ev SDL.KeycodeH ->
-          Just $ SetMode defaultHintsMode
-      -- Search increment next/prev
-      | withCtrl ev && isKeyPressWith ev SDL.KeycodeN -> Just $ IncrementHighlightIndex (stateRepetition state)
-      | withCtrl ev && isKeyPressWith ev SDL.KeycodeP -> Just $ IncrementHighlightIndex (-1 * stateRepetition state)
-      -- Space / Shift+Space
-      | isKeyPressWith ev SDL.KeycodeSpace ->
-          if withShift ev
+      -- Esc: Quit
+      | checkKey [key SDL.KeycodeEscape, pressed] ev -> Just ShutdownApp
+      -- <C-s>: Enable search mode
+      | checkKey [ctrl, key SDL.KeycodeS, pressed] ev -> Just $ SetMode defaultSearchMode
+      -- <C-h>: Enable hints mode
+      | checkKey [ctrl, key SDL.KeycodeH, pressed] ev -> Just $ SetMode defaultHintsMode
+      -- <C-n>, <C-p>: Search increment next/prev
+      | checkKey [ctrl, key SDL.KeycodeN, pressed] ev -> Just $ IncrementHighlightIndex (stateRepetition state)
+      | checkKey [ctrl, key SDL.KeycodeP, pressed] ev -> Just $ IncrementHighlightIndex (-1 * stateRepetition state)
+      -- Space / Shift+Space : Left click/chain left click
+      | checkKey [key SDL.KeycodeSpace, pressed] ev ->
+          if shift ev
             then Just $ ChainMouseClick LeftClick
             else Just $ TriggerMouseClick LeftClick
-      -- Tab / Backspace
-      | isKeyPressWith ev SDL.KeycodeTab || isKeyPressWith ev SDL.KeycodeBackspace ->
-          Just ResetKeys
-      -- Ctrl + V
-      | withCtrl ev && isKeyPressWith ev SDL.KeycodeV ->
-          Just MouseDragToggle
+      -- Backspace: Reset keys
+      | checkKey [key SDL.KeycodeBackspace, pressed] ev -> Just ResetKeys
+      -- <C-v>: Toggle mouse dragging
+      | checkKey [ctrl, key SDL.KeycodeV, pressed] ev -> Just MouseDragToggle
+      -- minus / underscore: Right click/chain right click
+      | checkKey [key SDL.KeycodeMinus <||> key SDL.KeycodeUnderscore, pressed] ev ->
+          if shift ev
+            then Just $ ChainMouseClick RightClick
+            else Just $ TriggerMouseClick RightClick
+      -- 0-9: Repetition digit
+      | checkKey [anyDigit, pressed] ev ->
+          Just $ UpdateRepetition (fromMaybe 0 $ keycodeToInt $ eventToKeycode ev)
       -- A-Z
-      | isKeyPressed ev && isValidKey (eventToKeycode ev) ->
-          Just $ HandleKeyInput $ eventToKeycode ev
-      -- Shift press
-      | isKeyPressWith ev SDL.KeycodeLShift || isKeyPressWith ev SDL.KeycodeRShift ->
-          Just $ UpdateShiftState True
-      -- Shift release
-      | isKeyReleaseWith ev SDL.KeycodeLShift || isKeyReleaseWith ev SDL.KeycodeRShift ->
-          Just $ UpdateShiftState False
+      | checkKey [anyAlphanumeric, pressed] ev -> Just $ HandleKeyInput $ eventToKeycode ev
+      -- Shift press/release: Toggle shift mode
+      | checkKey [pressed, key SDL.KeycodeRShift <||> key SDL.KeycodeLShift] ev -> Just $ UpdateShiftState True
+      | checkKey [released, key SDL.KeycodeRShift <||> key SDL.KeycodeLShift] ev -> Just $ UpdateShiftState False
     _ -> Nothing
 
 wordPosition :: (MonadDraw m) => OCRMatch -> m (Int, Int)
@@ -107,13 +101,17 @@ update state (SetMode mode) = do
   case mode of
     ModeHints -> pure (state {stateMode = mode}, Nothing)
     ModeSearch {} -> do
-      wordsOnScreen <- getWordsOnScreen
+      pos <- windowPosition
+      size <- windowSize
+      screenshot <- hideWindow >> captureScreenshot pos size <* showWindow
+
+      wordsOnScreen <- getWordsInImage screenshot
       let updatedMode = mode {searchWords = wordsOnScreen, searchFilteredWords = wordsOnScreen}
       pure (state {stateMode = updatedMode}, Nothing)
 
 -- HINTS MODE: Act on key inputs
-update state@(State {stateMode = ModeHints}) (HandleKeyInput key) = do
-  case (toKeyChar key, validChars) of
+update state@(State {stateMode = ModeHints}) (HandleKeyInput keycode) = do
+  case (toKeyChar keycode, validChars) of
     (Just keyChar, Just validChars')
       | stateIsMatched state && keyChar `elem` ("HJKL" :: String) -> do
           incr <- incrementValue
@@ -141,8 +139,8 @@ update state@(State {stateMode = ModeHints}) (HandleKeyInput key) = do
         else pure (wcell `div` 16, hcell `div` 16)
 
 -- SEARCH MODE: Act on key inputs
-update state@(State {stateMode = ModeSearch {searchWords, searchInputText}}) (HandleKeyInput key) = do
-  case toKeyChar key of
+update state@(State {stateMode = ModeSearch {searchWords, searchInputText}}) (HandleKeyInput keycode) = do
+  case toKeyChar keycode of
     Just keyChar -> do
       let searchText = searchInputText ++ [toLower keyChar]
       let matches = filterMatches searchText
@@ -193,7 +191,19 @@ update state (MoveMousePosition (x, y)) = do
 
 -- Reset entered key sequence and state
 update state ResetKeys = do
-  pure (state {stateKeySequence = [], stateIsMatched = False, stateRepetition = 1}, Nothing)
+  pure
+    ( state
+        { stateKeySequence = [],
+          stateIsMatched = False,
+          stateRepetition = 1,
+          stateMode = resetMode (stateMode state)
+        },
+      Nothing
+    )
+  where
+    resetMode mode@ModeHints = mode
+    resetMode (ModeSearch {searchWords}) =
+      defaultSearchMode {searchWords = searchWords, searchFilteredWords = searchWords}
 
 -- Trigger click
 update state (TriggerMouseClick btn) = do
@@ -241,5 +251,5 @@ update state (UpdateRepetition count) = do
   pure (state {stateRepetition = count}, Nothing)
 
 -- Set/unset whether shift is pressed
-update state (UpdateShiftState shift) =
-  pure (state {stateIsShiftPressed = shift}, Nothing)
+update state (UpdateShiftState shiftPressed) =
+  pure (state {stateIsShiftPressed = shiftPressed}, Nothing)

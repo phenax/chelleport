@@ -15,12 +15,27 @@ render state = case stateMode state of
   ModeSearch {searchFilteredWords, searchHighlightedIndex} ->
     renderSearchView state searchFilteredWords searchHighlightedIndex
 
+getSearchText :: State -> String
+getSearchText state = case stateMode state of
+  ModeHints -> ""
+  ModeSearch {searchInputText, searchFilteredWords, searchHighlightedIndex} ->
+    "Searching (" ++ matchCount ++ "): " ++ searchInputText
+    where
+      matchCount
+        | isEmpty searchFilteredWords = "0/0"
+        | otherwise = show (searchHighlightedIndex + 1) ++ "/" ++ show (length searchFilteredWords)
+
 renderSearchView :: (MonadDraw m) => State -> [OCRMatch] -> Int -> m ()
 renderSearchView state matches highlightedIndex = do
   renderGridLines state
+
   forM_ (zip [0 ..] matches) $ \(index, OCRMatch {matchStartX, matchStartY, matchEndX, matchEndY}) -> do
     setDrawColor $ if highlightedIndex == index then colorAccent else colorLightGray
     fillRectVertices (matchStartX, matchStartY) (matchEndX, matchEndY)
+
+  (w, h) <- windowSize
+  drawText (w `div` 2, h `div` 2) colorAccent FontSM (Text.pack $ getSearchText state)
+  pure ()
 
 renderHintsView :: (MonadDraw m) => State -> m ()
 renderHintsView state = do
@@ -50,12 +65,12 @@ renderKeySequence keySequence cell (px, py) = do
 
   previousTextWidth <-
     if isNotEmpty matched
-      then fst <$> drawText (px, py) colorLightGray (Text.pack matched)
+      then fst <$> drawText (px, py) colorLightGray FontLG (Text.pack matched)
       else pure 0
 
   when (isNotEmpty remaining) $ case textColor of
     Just color -> do
-      void $ drawText (px + previousTextWidth, py) color $ Text.pack remaining
+      void $ drawText (px + previousTextWidth, py) color FontLG $ Text.pack remaining
     Nothing -> pure ()
 
   pure isVisible

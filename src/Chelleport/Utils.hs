@@ -43,3 +43,9 @@ itemAt (_ : xs) i = itemAt xs (i - 1)
 
 clamp :: (Integral a) => (a, a) -> a -> a
 clamp (low, high) n = max low (min high n)
+
+(<&&>) :: [a -> Bool] -> a -> Bool
+(<&&>) preds ev = all (\p -> p ev) preds
+
+(<||>) :: (a -> Bool) -> (a -> Bool) -> a -> Bool
+(<||>) p1 p2 x = p1 x || p2 x

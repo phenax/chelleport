@@ -79,10 +79,13 @@ data AppAction
   | IncrementHighlightIndex Int
   deriving (Show, Eq)
 
+data FontSize = FontSM | FontLG deriving (Show, Eq)
+
 data DrawContext = DrawContext
   { ctxWindow :: SDL.Window,
     ctxRenderer :: SDL.Renderer,
-    ctxFont :: TTF.Font,
+    ctxFontSmall :: TTF.Font,
+    ctxFontLarge :: TTF.Font,
     ctxX11Display :: X11.Display
   }
 
