@@ -175,6 +175,26 @@ test = do
               ((_, action), _) <- runWithMocks $ update currentState $ HandleKeyInput SDL.KeycodeF
               action `shouldBe` Just (MoveMousePosition (1640, 370))
 
+    context "with action MoveMouseInDirection" $ do
+      let currentState = defaultState
+
+      context "when direction is up" $ do
+        it "continues to increment movement" $ do
+          ((_, action), _) <- runWithMocks $ update currentState $ MoveMouseInDirection DirUp
+          action `shouldBe` Just (IncrementMouseCursor (0, -33))
+      context "when direction is down" $ do
+        it "continues to increment movement" $ do
+          ((_, action), _) <- runWithMocks $ update currentState $ MoveMouseInDirection DirDown
+          action `shouldBe` Just (IncrementMouseCursor (0, 33))
+      context "when direction is left" $ do
+        it "continues to increment movement" $ do
+          ((_, action), _) <- runWithMocks $ update currentState $ MoveMouseInDirection DirLeft
+          action `shouldBe` Just (IncrementMouseCursor (-60, 0))
+      context "when direction is right" $ do
+        it "continues to increment movement" $ do
+          ((_, action), _) <- runWithMocks $ update currentState $ MoveMouseInDirection DirRight
+          action `shouldBe` Just (IncrementMouseCursor (60, 0))
+
     context "with action MoveMousePosition" $ do
       let currentState = defaultState
 

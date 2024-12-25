@@ -5,7 +5,7 @@ Control your mouse pointer entirely with your keyboard.
 
 
 ## Modes
-- **Labelled Hints mode (default. `ctrl+h`)**: Displays a grid overlay on your screen, where each cell is labeled with a unique two-key combination. Press the corresponding keys to move the cursor to the desired cell.
+- **Labelled Hints mode (default. `ctrl+t`)**: Displays a grid overlay on your screen, where each cell is labeled with a unique two-key combination. Press the corresponding keys to move the cursor to the desired cell.
 - **Text Search mode (`ctrl+s`)**: Uses OCR to identify and highlight words on the screen, allowing you to search for text and move the cursor directly to matching text.
 
 
@@ -42,15 +42,15 @@ https://github.com/user-attachments/assets/93ddc1ff-6cbe-4be4-9507-d68de880212a
 ## Usage
 Use [sxhkd](https://github.com/baskerville/sxhkd), [shotkey](https://github.com/phenax/shotkey), your window manager or any other key binding manager to set up a keybinding for `chelleport`.
 
-### Hints mode (`ctrl-h` to switch to hints mode)
+### Hints mode (`ctrl+t` to switch to hints mode)
 - With the grid open, type any of the key sequences shown on the grid to move the pointer there
 - Once a match is found, you can now use `hjkl` keys to make smaller movements. Hold `shift` + `hjkl` to move in bigger increments.
 - Press `space` to click
 
-### Search mode (`ctrl-s` to switch to search mode)
+### Search mode (`ctrl+s` to switch to search mode)
 - Words that are recognized by OCR will be highlighted
 - Type the characters in one of the words to move the cursor to it
-- Press `ctrl-n` & `ctrl-p` to go to next/previous match respectively
+- Press `ctrl+n` & `ctrl+p` to go to next/previous match respectively
 
 
 ## Feedback and Support

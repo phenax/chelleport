@@ -1,7 +1,7 @@
 module Chelleport.AppState (initialState, update) where
 
 import Chelleport.AppShell (MonadAppShell (hideWindow, showWindow, shutdownApp))
-import Chelleport.Control (MonadControl (..), directionalIncrement)
+import Chelleport.Control (MonadControl (..), directionalIncrement, hjklDirection)
 import Chelleport.Draw (MonadDraw (windowPosition, windowSize), pointerPositionIncrement, screenPositionFromCellPosition, wordPosition)
 import Chelleport.KeySequence (findMatchPosition, generateGrid, nextChars, toKeyChar)
 import Chelleport.OCR (MonadOCR (captureScreenshot), getWordsInImage)
@@ -36,9 +36,7 @@ update state@(State {stateMode = ModeHints}) (HandleKeyInput keycode) = do
   case (toKeyChar keycode, validNextKeys) of
     (Just keyChar, Just validChars')
       | stateIsMatched state && keyChar `elem` ("HJKL" :: String) -> do
-          incr <- pointerPositionIncrement state
-          let action = IncrementMouseCursor $ directionalIncrement incr keyChar
-          pure (state, Just action)
+          pure (state, Just $ MoveMouseInDirection $ hjklDirection keyChar)
       | keyChar `elem` validChars' -> do
           let newKeySequence = stateKeySequence state ++ [keyChar]
           let matchPosition = findMatchPosition newKeySequence $ stateGrid state
@@ -114,6 +112,11 @@ update state MouseDragStart = do
 update state MouseDragToggle
   | stateIsDragging state = pure (state {stateIsDragging = False}, Just MouseDragEnd)
   | otherwise = do pure (state {stateIsDragging = True}, Just MouseDragStart)
+
+-- Apply movement in given direction
+update state (MoveMouseInDirection direction) = do
+  incr <- pointerPositionIncrement state
+  pure (state, Just $ IncrementMouseCursor $ directionalIncrement incr direction)
 
 -- Move mouse to given position
 update state (MoveMousePosition (x, y)) = do

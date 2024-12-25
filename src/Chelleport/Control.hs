@@ -94,10 +94,17 @@ anyDigit = isKeycodeDigit . eventToKeycode
 anyAlphanumeric :: SDL.KeyboardEventData -> Bool
 anyAlphanumeric = isValidKey . eventToKeycode
 
-directionalIncrement :: (CInt, CInt) -> Char -> (Int, Int)
+hjklDirection :: Char -> Direction
+hjklDirection = \case
+  'H' -> DirLeft
+  'L' -> DirRight
+  'K' -> DirUp
+  'J' -> DirDown
+  _ -> DirUp
+
+directionalIncrement :: (CInt, CInt) -> Direction -> (Int, Int)
 directionalIncrement (incX, incY) = \case
-  'H' -> (-cIntToInt incX, 0)
-  'L' -> (cIntToInt incX, 0)
-  'K' -> (0, -cIntToInt incY)
-  'J' -> (0, cIntToInt incY)
-  _ -> undefined
+  DirLeft -> (-cIntToInt incX, 0)
+  DirRight -> (cIntToInt incX, 0)
+  DirUp -> (0, -cIntToInt incY)
+  DirDown -> (0, cIntToInt incY)

@@ -3,8 +3,8 @@ module Chelleport where
 import Chelleport.AppShell (setupAppShell)
 import qualified Chelleport.AppState as AppState
 import Chelleport.Context (initializeContext)
-import Chelleport.Control (anyAlphanumeric, anyDigit, checkKey, ctrl, eventToKeycode, key, pressed, released, shift)
-import Chelleport.KeySequence (keycodeToInt)
+import Chelleport.Control (anyAlphanumeric, anyDigit, checkKey, ctrl, eventToKeycode, hjklDirection, key, pressed, released, shift)
+import Chelleport.KeySequence (keycodeToInt, toKeyChar)
 import Chelleport.Types
 import Chelleport.Utils ((<||>))
 import qualified Chelleport.View
@@ -28,7 +28,8 @@ run = do
     runAppWithCtx ctx = (`runReaderT` ctx) . runAppM
 
 eventHandler :: State -> SDL.Event -> Maybe AppAction
-eventHandler state event =
+eventHandler state event = do
+  let hjkl = key SDL.KeycodeH <||> key SDL.KeycodeJ <||> key SDL.KeycodeK <||> key SDL.KeycodeL
   case SDL.eventPayload event of
     SDL.QuitEvent -> Just ShutdownApp
     SDL.KeyboardEvent ev
@@ -36,11 +37,14 @@ eventHandler state event =
       | checkKey [key SDL.KeycodeEscape, pressed] ev -> Just ShutdownApp
       -- <C-s>: Enable search mode
       | checkKey [ctrl, key SDL.KeycodeS, pressed] ev -> Just $ SetMode defaultSearchMode
-      -- <C-h>: Enable hints mode
-      | checkKey [ctrl, key SDL.KeycodeH, pressed] ev -> Just $ SetMode defaultHintsMode
+      -- <C-t>: Enable hints mode
+      | checkKey [ctrl, key SDL.KeycodeT, pressed] ev -> Just $ SetMode defaultHintsMode
       -- <C-n>, <C-p>: Search increment next/prev
       | checkKey [ctrl, key SDL.KeycodeN, pressed] ev -> Just $ IncrementHighlightIndex (stateRepetition state)
       | checkKey [ctrl, key SDL.KeycodeP, pressed] ev -> Just $ IncrementHighlightIndex (-1 * stateRepetition state)
+      -- <C-hjkl>: Movement
+      | checkKey [ctrl, hjkl, pressed] ev ->
+          MoveMouseInDirection . hjklDirection <$> toKeyChar (eventToKeycode ev)
       -- Space / Shift+Space : Left click/chain left click
       | checkKey [key SDL.KeycodeSpace, pressed] ev ->
           if shift ev

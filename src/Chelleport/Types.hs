@@ -62,6 +62,9 @@ defaultAppState =
       stateMode = ModeHints
     }
 
+data Direction = DirUp | DirDown | DirLeft | DirRight
+  deriving (Show, Eq)
+
 data AppAction
   = ChainMouseClick MouseButtonType
   | HandleKeyInput SDL.Keycode
@@ -70,6 +73,7 @@ data AppAction
   | MouseDragEnd
   | MouseDragStart
   | MouseDragToggle
+  | MoveMouseInDirection Direction
   | MoveMousePosition (Int, Int)
   | ResetKeys
   | SetMode Mode
