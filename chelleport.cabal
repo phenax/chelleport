@@ -51,6 +51,7 @@ common extension
   extra-libraries: stdc++ Xtst X11 tesseract leptonica
   include-dirs: include
   c-sources: cpp/libchelleport.cpp
+  cxx-options: -O3 -ffast-math -march=native
   extra-source-files:
     cpp/*.cpp
     include/*.h

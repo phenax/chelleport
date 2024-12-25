@@ -1,6 +1,7 @@
 module Chelleport.OCR (MonadOCR (..)) where
 
 import Chelleport.Types
+import Chelleport.Utils (benchmark)
 import Control.Concurrent (threadDelay)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.RWS (MonadReader (ask))
@@ -31,7 +32,6 @@ instance (MonadIO m) => MonadOCR (AppM m) where
       pure path
 
   getWordsInImage filePath = liftIO $ do
-    print filePath
     findWordCoordinates filePath <* removeFile filePath
 
 findWordCoordinates :: String -> IO [OCRMatch]

@@ -1,5 +1,6 @@
+#include <chrono>
 #include <leptonica/allheaders.h>
-#include <tesseract/publictypes.h>
+#include <tesseract/baseapi.h>
 #include <vector>
 
 // NOTE: Remember to update size and alignment in ocr hs module on change
@@ -26,8 +27,25 @@ extern "C" {
 OCRMatch *findWordCoordinates(const char *image_path, /* returns */ int *size);
 }
 
+tesseract::TessBaseAPI *initializeTesseract();
+
+Pix *loadImage(const char *imagePath);
+
 std::vector<OCRMatch> extractTextCoordinates(const char *imagePath);
 
-void showMatch(const OCRMatch &match);
+void printMatch(const OCRMatch &match);
 
 void preprocessImage(Pix **image);
+
+#define INLINE_IMAGE_PROC(process)                                             \
+  temp = process;                                                              \
+  pixDestroy(image);                                                           \
+  *image = temp;
+
+#define MEASURE(label, stmts)                                                  \
+  auto start = std::chrono::high_resolution_clock::now();                      \
+  stmts;                                                                       \
+  auto end = std::chrono::high_resolution_clock::now();                        \
+  auto duration =                                                              \
+      std::chrono::duration_cast<std::chrono::microseconds>(end - start);      \
+  std::cout << label << ": " << duration.count() / 1000.0 << " ms" << std::endl;

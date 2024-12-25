@@ -5,21 +5,18 @@
 #include <iostream>
 #include <leptonica/allheaders.h>
 #include <tesseract/baseapi.h>
-#include <tesseract/publictypes.h>
 #include <vector>
 
 #include "../include/libchelleport.h"
 
 OCRMatch *findWordCoordinates(const char *image_path, int *size) {
-  auto matches = extractTextCoordinates(image_path);
+  std::vector<OCRMatch> matches;
+  MEASURE("OCR", { matches = extractTextCoordinates(image_path); });
+
+  std::cout << "Word count: " << matches.size() << std::endl;
 
   static OCRMatch *ptr = new OCRMatch[matches.size()];
   std::copy(matches.begin(), matches.end(), ptr);
-
-  // for (const auto &match : matches)
-  //   showMatch(match);
-
-  printf("Count: %ld\n", matches.size());
 
   *size = matches.size();
   return ptr;
@@ -27,20 +24,14 @@ OCRMatch *findWordCoordinates(const char *image_path, int *size) {
 
 std::vector<OCRMatch> extractTextCoordinates(const char *imagePath) {
   std::vector<OCRMatch> results;
-  tesseract::TessBaseAPI *tesseract = new tesseract::TessBaseAPI();
 
-  if (tesseract->Init(nullptr, "eng")) {
-    std::cerr << "Could not initialize tesseract." << std::endl;
+  auto tesseract = initializeTesseract();
+  if (tesseract == nullptr)
     return results;
-  }
 
-  Pix *image = pixRead(imagePath);
-  if (!image) {
-    std::cerr << "Could not load image " << imagePath << std::endl;
+  Pix *image = loadImage(imagePath);
+  if (image == nullptr)
     return results;
-  }
-
-  preprocessImage(&image);
 
   // printf("imagePath: %s\n", imagePath);
   // pixWrite(imagePath, image, IFF_JFIF_JPEG);
@@ -53,16 +44,17 @@ std::vector<OCRMatch> extractTextCoordinates(const char *imagePath) {
 
   if (iterator != 0) {
     do {
-      float conf = iterator->Confidence(level);
-      const char *word = iterator->GetUTF8Text(level);
+      if (iterator->Confidence(level) > CONFIDENCE_THRESHOLD) {
+        const char *word = iterator->GetUTF8Text(level);
 
-      if (conf > CONFIDENCE_THRESHOLD && word != nullptr &&
-          strlen(word) >= MIN_CHARACTER_COUNT) {
-        int x1, y1, x2, y2;
-        iterator->BoundingBox(level, &x1, &y1, &x2, &y2);
-        results.push_back(
-            OCRMatch{(int)(x1 / scaleFactor), (int)(y1 / scaleFactor),
-                     (int)(x2 / scaleFactor), (int)(y2 / scaleFactor), word});
+        if (word != nullptr && strlen(word) >= MIN_CHARACTER_COUNT) {
+          int x1, y1, x2, y2;
+          iterator->BoundingBox(level, &x1, &y1, &x2, &y2);
+          OCRMatch match({(int)(x1 / scaleFactor), (int)(y1 / scaleFactor),
+                          (int)(x2 / scaleFactor), (int)(y2 / scaleFactor),
+                          word});
+          results.push_back(match);
+        }
       }
     } while (iterator->Next(level));
   }
@@ -75,36 +67,55 @@ std::vector<OCRMatch> extractTextCoordinates(const char *imagePath) {
   return results;
 }
 
+inline tesseract::TessBaseAPI *initializeTesseract() {
+  auto *tesseract = new tesseract::TessBaseAPI();
+  tesseract->SetPageSegMode(tesseract::PSM_AUTO);
+
+  if (tesseract->Init(nullptr, "eng", tesseract::OEM_LSTM_ONLY)) {
+    std::cerr << "Could not initialize tesseract." << std::endl;
+    return nullptr;
+  }
+
+  return tesseract;
+}
+
+inline Pix *loadImage(const char *imagePath) {
+  Pix *image = pixRead(imagePath);
+  if (!image) {
+    std::cerr << "Could not load image " << imagePath << std::endl;
+    return nullptr;
+  }
+
+  preprocessImage(&image);
+
+  return image;
+}
+
 void preprocessImage(Pix **image) {
   Pix *temp;
 
   // Scale
   if (scaleFactor != 1) {
-    temp = pixScale(*image, scaleFactor, scaleFactor);
-    pixDestroy(image);
-    *image = temp;
+    INLINE_IMAGE_PROC(pixScale(*image, scaleFactor, scaleFactor));
   }
 
   // Grayscale
   if (pixGetDepth(*image) > 8) {
-    temp = pixConvertRGBToGray(*image, grayscaleWeightRed, grayscaleWeightGreen,
-                               grayscaleWeightBlue);
-    pixDestroy(image);
-    *image = temp;
+    INLINE_IMAGE_PROC(pixConvertRGBToGray(
+        *image, grayscaleWeightRed, grayscaleWeightGreen, grayscaleWeightBlue));
   }
 
   // Contrast
   pixContrastTRC(*image, *image, contrast);
 
   // Sharpness
-  // temp = pixUnsharpMaskingGrayFast(*image, 1, sharpness, 1);
-  temp = pixUnsharpMasking(*image, 1, sharpness);
-  pixDestroy(image);
-  *image = temp;
+  // INLINE_IMAGE_PROC(pixUnsharpMaskingGrayFast(*image, 1, sharpness, 1));
+  INLINE_IMAGE_PROC(pixUnsharpMasking(*image, 1, sharpness));
 }
 
-void showMatch(const OCRMatch &match) {
+void printMatch(const OCRMatch &match) {
   std::cout << "Text: " << match.text << "; Position: (" << match.startX << ","
             << match.startY << ") -> (" << match.endX << "," << match.endY
-            << ")" << "\n\n";
+            << ")" << std::endl
+            << std::endl;
 }
