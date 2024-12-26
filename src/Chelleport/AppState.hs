@@ -7,7 +7,7 @@ import Chelleport.KeySequence (findMatchPosition, generateGrid, nextChars, toKey
 import Chelleport.OCR (MonadOCR (captureScreenshot), getWordsInImage)
 import Chelleport.Types
 import Chelleport.Utils (cIntToInt, clamp, intToCInt, isEmpty, itemAt)
-import Control.Monad (forM_)
+import Control.Monad (replicateM_)
 import Data.Char (toLower)
 import Data.List (isInfixOf)
 import Data.Maybe (fromMaybe, isJust)
@@ -25,9 +25,7 @@ update :: (MonadAppShell m, MonadDraw m, MonadControl m, MonadOCR m) => State ->
 -- Chain clicks
 update state (ChainMouseClick btn) = do
   hideWindow
-  let count = case stateRepetition state of 0 -> 1; n -> n
-  forM_ [1 .. count] $ \_ -> do
-    clickMouseButton btn
+  replicateM_ (stateRepetition state) $ clickMouseButton btn
   showWindow
   pure (state {stateRepetition = 1}, Just ResetKeys)
 
@@ -90,7 +88,7 @@ update state (IncrementHighlightIndex n) = do
 -- Move mouse incrementally
 update state (IncrementMouseCursor (incX, incY)) = do
   (curX, curY) <- getMousePointerPosition
-  let count = case stateRepetition state of 0 -> 1; n -> n
+  let count = stateRepetition state
   let pos = (cIntToInt curX + count * incX, cIntToInt curY + count * incY)
   pure (state {stateRepetition = 1}, Just $ MoveMousePosition pos)
 
@@ -159,14 +157,12 @@ update state ShutdownApp = do
 -- Trigger click
 update state (TriggerMouseClick btn) = do
   hideWindow
-  let count = case stateRepetition state of 0 -> 1; n -> n
-  forM_ [1 .. count] $ \_ -> do
-    clickMouseButton btn
+  replicateM_ (stateRepetition state) $ clickMouseButton btn
   pure (state {stateRepetition = 1}, Just ShutdownApp)
 
 -- Set repetition count
 update state (UpdateRepetition count) = do
-  pure (state {stateRepetition = count}, Nothing)
+  pure (state {stateRepetition = max 1 count}, Nothing)
 
 -- Set/unset whether shift is pressed
 update state (UpdateShiftState shiftPressed) =

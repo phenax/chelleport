@@ -31,16 +31,17 @@ test = do
     let defaultState = defaultAppState {stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]]}
 
     context "with action ChainMouseClick" $ do
-      let currentState = defaultState
+      context "when repetition is 1" $ do
+        let currentState = defaultState {stateRepetition = 1}
 
-      it "hides window, triggers mouse click and shows the window again" $ do
-        (_, mock) <- runWithMocks $ update currentState $ ChainMouseClick LeftClick
-        mock `shouldContainCalls` [Mock_hideWindow, Mock_clickMouseButton LeftClick, Mock_showWindow]
+        it "hides window, triggers mouse click and shows the window again" $ do
+          (_, mock) <- runWithMocks $ update currentState $ ChainMouseClick LeftClick
+          mock `shouldContainCalls` [Mock_hideWindow, Mock_clickMouseButton LeftClick, Mock_showWindow]
 
-      it "continues with action ResetKeys without updating state" $ do
-        ((nextState, action), _) <- runWithMocks $ update currentState $ ChainMouseClick LeftClick
-        action `shouldBe` Just ResetKeys
-        nextState `shouldBe` currentState
+        it "continues with action ResetKeys without updating state" $ do
+          ((nextState, action), _) <- runWithMocks $ update currentState $ ChainMouseClick LeftClick
+          action `shouldBe` Just ResetKeys
+          nextState `shouldBe` currentState
 
       context "when repetition is more than 1" $ do
         let currentState = defaultState {stateRepetition = 3}
@@ -59,13 +60,6 @@ test = do
                                    Mock_showWindow
                                  ]
 
-      context "when repetition is 0" $ do
-        let currentState = defaultState {stateRepetition = 0}
-
-        it "clicks just once" $ do
-          (_, mock) <- runWithMocks $ update currentState $ ChainMouseClick LeftClick
-          mock `shouldContainCalls` [Mock_hideWindow, Mock_clickMouseButton LeftClick, Mock_showWindow]
-
     context "with action IncrementHighlightIndex" $ do
       -- let currentState = defaultState
 
@@ -73,17 +67,18 @@ test = do
         1 `shouldBe` 1
 
     context "with action IncrementMouseCursor" $ do
-      let currentState = defaultState
+      context "when repetition is 1" $ do
+        let currentState = defaultState {stateRepetition = 1}
 
-      it "continues with MoveMousePosition" $ do
-        ((_, action), _) <- runWithMocks $ do
-          Mock_getMousePointerPosition `mockReturns` (42, 42)
-          update currentState $ IncrementMouseCursor (10, -5)
-        action `shouldBe` Just (MoveMousePosition (52, 37))
+        it "continues with MoveMousePosition" $ do
+          ((_, action), _) <- runWithMocks $ do
+            Mock_getMousePointerPosition `mockReturns` (42, 42)
+            update currentState $ IncrementMouseCursor (10, -5)
+          action `shouldBe` Just (MoveMousePosition (52, 37))
 
-      it "does update state" $ do
-        ((state, _), _) <- runWithMocks $ update currentState $ IncrementMouseCursor (10, -5)
-        state `shouldBe` currentState
+        it "does update state" $ do
+          ((state, _), _) <- runWithMocks $ update currentState $ IncrementMouseCursor (10, -5)
+          state `shouldBe` currentState
 
       context "when repetition is more than 1" $ do
         let currentState = defaultState {stateRepetition = 5}
@@ -93,15 +88,6 @@ test = do
             Mock_getMousePointerPosition `mockReturns` (42, 42)
             update currentState $ IncrementMouseCursor (10, -5)
           action `shouldBe` Just (MoveMousePosition (92, 17))
-
-      context "when repetition is 0" $ do
-        let currentState = defaultState {stateRepetition = 0}
-
-        it "increments just once" $ do
-          ((_, action), _) <- runWithMocks $ do
-            Mock_getMousePointerPosition `mockReturns` (42, 42)
-            update currentState $ IncrementMouseCursor (10, -5)
-          action `shouldBe` Just (MoveMousePosition (52, 37))
 
     context "with action MouseDragEnd" $ do
       let currentState = defaultState
@@ -169,7 +155,7 @@ test = do
               action `shouldBe` Nothing
               nextState `shouldBe` currentState {stateKeySequence = "DE"}
 
-        context "when there is a matches" $ do
+        context "when there are matches" $ do
           let currentState = defaultState {stateKeySequence = "DE", stateMode = defaultHintsMode}
 
           context "when input key sequence does not have matching values in grid" $ do
@@ -193,18 +179,21 @@ test = do
             Mock_windowSize `mockReturns` mockWindowSize
             update currentState $ MoveMouseInDirection DirUp
           action `shouldBe` Just (IncrementMouseCursor (0, -33))
+
       context "when direction is down" $ do
         it "continues to increment movement" $ do
           ((_, action), _) <- runWithMocks $ do
             Mock_windowSize `mockReturns` mockWindowSize
             update currentState $ MoveMouseInDirection DirDown
           action `shouldBe` Just (IncrementMouseCursor (0, 33))
+
       context "when direction is left" $ do
         it "continues to increment movement" $ do
           ((_, action), _) <- runWithMocks $ do
             Mock_windowSize `mockReturns` mockWindowSize
             update currentState $ MoveMouseInDirection DirLeft
           action `shouldBe` Just (IncrementMouseCursor (-60, 0))
+
       context "when direction is right" $ do
         it "continues to increment movement" $ do
           ((_, action), _) <- runWithMocks $ do
@@ -277,16 +266,17 @@ test = do
         result `shouldBe` (currentState, Nothing)
 
     context "with action TriggerMouseClick" $ do
-      let currentState = defaultState
+      context "when repetition is 1" $ do
+        let currentState = defaultState {stateRepetition = 1}
 
-      it "hides window and triggers mouse click" $ do
-        (_, mock) <- runWithMocks $ update currentState $ TriggerMouseClick LeftClick
-        mock `shouldContainCalls` [Mock_hideWindow, Mock_clickMouseButton LeftClick]
+        it "hides window and triggers mouse click" $ do
+          (_, mock) <- runWithMocks $ update currentState $ TriggerMouseClick LeftClick
+          mock `shouldContainCalls` [Mock_hideWindow, Mock_clickMouseButton LeftClick]
 
-      it "continues with action ShutdownApp without updating state" $ do
-        ((nextState, action), _) <- runWithMocks $ update currentState $ TriggerMouseClick LeftClick
-        action `shouldBe` Just ShutdownApp
-        nextState `shouldBe` currentState
+        it "continues with action ShutdownApp without updating state" $ do
+          ((nextState, action), _) <- runWithMocks $ update currentState $ TriggerMouseClick LeftClick
+          action `shouldBe` Just ShutdownApp
+          nextState `shouldBe` currentState
 
       context "when repetition is more than 1" $ do
         let currentState = defaultState {stateRepetition = 3}
@@ -304,20 +294,19 @@ test = do
                                    Mock_clickMouseButton LeftClick
                                  ]
 
-      context "when repetition is 0" $ do
-        let currentState = defaultState {stateRepetition = 0}
-
-        it "clicks just once" $ do
-          (_, mock) <- runWithMocks $ update currentState $ TriggerMouseClick LeftClick
-          mock `shouldContainCalls` [Mock_hideWindow, Mock_clickMouseButton LeftClick]
-
     context "with action UpdateRepetition" $ do
       let currentState = defaultState
 
-      it "updates shift state without any action" $ do
+      it "updates repetition without any action" $ do
         ((nextState, action), _) <- runWithMocks $ update currentState $ UpdateRepetition 7
         action `shouldBe` Nothing
         nextState `shouldBe` currentState {stateRepetition = 7}
+
+      context "when count is 0" $ do
+        it "updates repetition to 1" $ do
+          ((nextState, action), _) <- runWithMocks $ update currentState $ UpdateRepetition 0
+          action `shouldBe` Nothing
+          nextState `shouldBe` currentState {stateRepetition = 1}
 
     context "with action UpdateShiftState" $ do
       let currentState = defaultState

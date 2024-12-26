@@ -1,6 +1,6 @@
 module Chelleport.Control where
 
-import Chelleport.KeySequence (isKeycodeDigit, isValidKey)
+import Chelleport.KeySequence (isAlphabetic, isKeycodeDigit)
 import Chelleport.Types
 import Chelleport.Utils
 import Control.Concurrent (threadDelay)
@@ -91,8 +91,8 @@ shift ev = SDL.keyModifierLeftShift (keyModifier ev) || SDL.keyModifierRightShif
 anyDigit :: SDL.KeyboardEventData -> Bool
 anyDigit = isKeycodeDigit . eventToKeycode
 
-anyAlphanumeric :: SDL.KeyboardEventData -> Bool
-anyAlphanumeric = isValidKey . eventToKeycode
+anyAlphabetic :: SDL.KeyboardEventData -> Bool
+anyAlphabetic = isAlphabetic . eventToKeycode
 
 hjklDirection :: Char -> Direction
 hjklDirection = \case

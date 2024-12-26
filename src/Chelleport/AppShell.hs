@@ -20,13 +20,13 @@ instance (MonadIO m) => MonadAppShell (AppM m) where
   hideWindow = asks ctxWindow >>= SDL.hideWindow
   showWindow = asks ctxWindow >>= SDL.showWindow
   shutdownApp = do
-    DrawContext {ctxRenderer = renderer, ctxWindow = window, ctxX11Display = x11Display} <- ask
-    SDL.destroyRenderer renderer
-    SDL.destroyWindow window
+    ctx <- ask
+    SDL.destroyRenderer $ ctxRenderer ctx
+    SDL.destroyWindow $ ctxWindow ctx
     releaseMouseButton
     SDL.quit
     liftIO $ do
-      X11.closeDisplay x11Display
+      X11.closeDisplay $ ctxX11Display ctx
       exitSuccess
 
 type Update m state appAction = state -> appAction -> m (state, Maybe appAction)

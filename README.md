@@ -9,6 +9,13 @@ Control your mouse pointer entirely with your keyboard.
 - **Text Search mode (`ctrl+s`)**: Uses OCR to identify and highlight words on the screen, allowing you to search for text and move the cursor directly to matching text.
 
 
+---
+
+https://github.com/user-attachments/assets/93ddc1ff-6cbe-4be4-9507-d68de880212a
+
+---
+
+
 ## Features
 - **Search by text**:
   - Use OCR to locate any visible text on the screen and position your cursor precisely.
@@ -29,9 +36,6 @@ Control your mouse pointer entirely with your keyboard.
   - Once you match with a label on the screen, you can use `hjkl` keys to move your cursor.
   - Holding `shift` key will use bigger steps for movements.
   - You can also repeat movement by pressing a digit before the movement. Eg: `5k` moves 5 small steps up. `5K` moves 5 big steps up.
-
-
-https://github.com/user-attachments/assets/93ddc1ff-6cbe-4be4-9507-d68de880212a
 
 
 ## Install

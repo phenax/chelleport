@@ -14,8 +14,8 @@ nextChars keySequence cells =
     [] -> Nothing
     _ -> Just nextCharactersInSequence
   where
-    matches = concatMap (filter $ isPrefixOf keySequence) cells
     nextCharactersInSequence = uniq $ concatMap (take 1 . drop (length keySequence)) matches
+    matches = concatMap (filter $ isPrefixOf keySequence) cells
 
 findMatchPosition :: KeySequence -> KeyGrid -> Maybe (Int, Int)
 findMatchPosition keySequence = findWithIndex searchRows 0
@@ -23,16 +23,16 @@ findMatchPosition keySequence = findWithIndex searchRows 0
     searchRows = fmap fst . findWithIndex searchInRow 0
     searchInRow = guard . (== keySequence)
 
-isValidKey :: SDL.Keycode -> Bool
-isValidKey = (`Map.member` keycodeCharMapping)
+isAlphabetic :: SDL.Keycode -> Bool
+isAlphabetic = (`Map.member` keycodeCharMapping)
 
 -- Linear Congruential Generator
 lcg :: Int -> Int
-lcg seed = (a * seed + c) `mod` fromIntegral m
+lcg seed = (multiplier * seed + increment) `mod` modulus
   where
-    a = 1664525
-    c = 1013904223
-    m = (2 :: Integer) ^ (32 :: Integer)
+    multiplier = 1664525
+    increment = 1013904223
+    modulus = fromIntegral $ (2 :: Integer) ^ (32 :: Integer)
 
 getIndexRounded :: Int -> [a] -> a
 getIndexRounded i ls = ls !! (i `mod` length ls)
@@ -53,6 +53,12 @@ generateGrid seed (rows, columns) hintKeys
 
 toKeyChar :: SDL.Keycode -> Maybe Char
 toKeyChar = (`Map.lookup` keycodeCharMapping)
+
+keycodeToInt :: SDL.Keycode -> Maybe Int
+keycodeToInt = (`elemIndex` digitKeycodes)
+
+isKeycodeDigit :: SDL.Keycode -> Bool
+isKeycodeDigit = isJust . keycodeToInt
 
 keycodeCharMapping :: Map.Map SDL.Keycode Char
 keycodeCharMapping =
@@ -84,12 +90,6 @@ keycodeCharMapping =
       (SDL.KeycodeY, 'Y'),
       (SDL.KeycodeZ, 'Z')
     ]
-
-keycodeToInt :: SDL.Keycode -> Maybe Int
-keycodeToInt = (`elemIndex` digitKeycodes)
-
-isKeycodeDigit :: SDL.Keycode -> Bool
-isKeycodeDigit = isJust . keycodeToInt
 
 digitKeycodes :: [SDL.Keycode]
 digitKeycodes =
