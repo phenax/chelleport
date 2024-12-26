@@ -6,7 +6,7 @@ Control your mouse pointer entirely with your keyboard.
 
 ## Modes
 - **Labelled Hints mode (default. `ctrl+t`)**: Displays a grid overlay on your screen, where each cell is labeled with a unique two-key combination. Press the corresponding keys to move the cursor to the desired cell.
-- **Text Search mode (`ctrl+s`)**: Uses OCR to identify and highlight words on the screen, allowing you to search for text and move the cursor directly to matching text.
+- **Text Search mode (`ctrl+s`)**: Uses OCR to identify and highlight words on the screen, allowing you to fuzzy search for text and move the cursor directly to matching text.
 
 
 ---

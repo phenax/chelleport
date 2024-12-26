@@ -11,6 +11,7 @@ import Control.Monad (replicateM_)
 import Data.Char (toLower)
 import Data.List (isInfixOf)
 import Data.Maybe (fromMaybe, isJust)
+import qualified Text.Fuzzy as Fuzzy
 
 initialState :: (Monad m) => m (State, Maybe AppAction)
 initialState = do
@@ -67,7 +68,7 @@ update state@(State {stateMode = ModeSearch {searchWords, searchInputText}}) (Ha
     mode = stateMode state
     filterMatches text
       | isEmpty text = searchWords
-      | otherwise = filter (isInfixOf text . map toLower . matchText) searchWords
+      | otherwise = Fuzzy.original <$> Fuzzy.filter text searchWords "" "" matchText False
 
 -- Increment highlighted index for search mode
 update state (IncrementHighlightIndex n) = do
