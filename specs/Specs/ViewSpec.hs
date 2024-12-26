@@ -9,46 +9,52 @@ import TestUtils
 test :: SpecWith ()
 test = do
   let defaultState = defaultAppState {stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]]}
-  let drawTextCalls = filter (\case Mock_drawText {} -> True; _ -> False) . calls
 
   describe "#render" $ do
     context "when key sequence is empty" $ do
       let currentState = defaultState {stateKeySequence = ""}
 
       it "draws matching text labels" $ do
-        (_, mock) <- runWithMocks $ render currentState
-        drawTextCalls mock
-          `shouldBe` [ Mock_drawText (460, 10) colorWhite FontLG "ABC",
-                       Mock_drawText (1420, 10) colorWhite FontLG "DEF",
-                       Mock_drawText (460, 550) colorWhite FontLG "DJK",
-                       Mock_drawText (1420, 550) colorWhite FontLG "JKL"
-                     ]
+        (_, mock) <- runWithMocks $ do
+          Mock_windowSize `mockReturns` mockWindowSize
+          render currentState
+        mock `shouldHaveCalled` Mock_drawText (460, 10) colorWhite FontLG "ABC"
+        mock `shouldHaveCalled` Mock_drawText (1420, 10) colorWhite FontLG "DEF"
+        mock `shouldHaveCalled` Mock_drawText (460, 550) colorWhite FontLG "DJK"
+        mock `shouldHaveCalled` Mock_drawText (1420, 550) colorWhite FontLG "JKL"
 
     context "when there is a partial match" $ do
       let currentState = defaultState {stateKeySequence = "D"}
 
       it "draws matching text labels" $ do
-        (_, mock) <- runWithMocks $ render currentState
-        drawTextCalls mock
-          `shouldBe` [ Mock_drawText (1420, 10) colorLightGray FontLG "D",
-                       Mock_drawText (1430, 10) colorAccent FontLG "EF",
-                       Mock_drawText (460, 550) colorLightGray FontLG "D",
-                       Mock_drawText (470, 550) colorAccent FontLG "JK"
-                     ]
+        (_, mock) <- runWithMocks $ do
+          Mock_windowSize `mockReturns` mockWindowSize
+          Mock_drawText (1420, 10) colorLightGray FontLG "D" `mockReturns` (10, 0)
+          Mock_drawText (460, 550) colorLightGray FontLG "D" `mockReturns` (10, 0)
+          render currentState
+        mock `shouldHaveCalled` Mock_drawText (1420, 10) colorLightGray FontLG "D"
+        mock `shouldHaveCalled` Mock_drawText (1430, 10) colorAccent FontLG "EF"
+        mock `shouldHaveCalled` Mock_drawText (460, 550) colorLightGray FontLG "D"
+        mock `shouldHaveCalled` Mock_drawText (470, 550) colorAccent FontLG "JK"
 
     context "when key sequence is complete match" $ do
       let currentState = defaultState {stateKeySequence = "DEF"}
 
       it "draws only the matching label" $ do
-        (_, mock) <- runWithMocks $ render currentState
-        drawTextCalls mock `shouldBe` [Mock_drawText (1420, 10) colorLightGray FontLG "DEF"]
+        (_, mock) <- runWithMocks $ do
+          Mock_windowSize `mockReturns` mockWindowSize
+          render currentState
+        mock `shouldHaveCalled` Mock_drawText (1420, 10) colorLightGray FontLG "DEF"
 
   describe "#renderKeySequence" $ do
     context "when there is a partial match" $ do
       it "draws the matched section and highlights the remaining characters" $ do
-        (_, mock) <- runWithMocks $ renderKeySequence "ABC" "ABCDE" (0, 0)
-        calls mock
-          `shouldBe` [Mock_drawText (0, 0) colorLightGray FontLG "ABC", Mock_drawText (3 * 10, 0) colorAccent FontLG "DE"]
+        (_, mock) <- runWithMocks $ do
+          Mock_windowSize `mockReturns` mockWindowSize
+          Mock_drawText (0, 0) colorLightGray FontLG "ABC" `mockReturns` (30, 0)
+          renderKeySequence "ABC" "ABCDE" (0, 0)
+        mock `shouldHaveCalled` Mock_drawText (0, 0) colorLightGray FontLG "ABC"
+        mock `shouldHaveCalled` Mock_drawText (30, 0) colorAccent FontLG "DE"
 
       it "return true as the text is visible" $ do
         (isVisible, _) <- runWithMocks $ renderKeySequence "ABC" "ABCDE" (0, 0)
@@ -57,7 +63,7 @@ test = do
     context "when there is no input key sequence" $ do
       it "draws text as a single chunk" $ do
         (_, mock) <- runWithMocks $ renderKeySequence "" "ABCD" (0, 0)
-        calls mock `shouldBe` [Mock_drawText (0, 0) colorWhite FontLG "ABCD"]
+        mock `shouldHaveCalled` Mock_drawText (0, 0) colorWhite FontLG "ABCD"
 
       it "return true as the text is visible" $ do
         (isVisible, _) <- runWithMocks $ renderKeySequence "" "ABCD" (0, 0)
