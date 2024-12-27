@@ -37,10 +37,10 @@ lcg seed = (multiplier * seed + increment) `mod` modulus
 getIndexRounded :: Int -> [a] -> a
 getIndexRounded i ls = ls !! (i `mod` length ls)
 
-generateGrid :: Int -> (Int, Int) -> KeySequence -> Maybe KeyGrid
+generateGrid :: Int -> (Int, Int) -> KeySequence -> Either String KeyGrid
 generateGrid seed (rows, columns) hintKeys
-  | rows * columns > length hintKeys * length hintKeys = Nothing
-  | otherwise = Just $ (\row -> getKeySeq row <$> [0 .. columns - 1]) <$> [0 .. rows - 1]
+  | rows * columns >= length hintKeys * length hintKeys = Left "Row/Column counts too high"
+  | otherwise = Right $ (\row -> getKeySeq row <$> [0 .. columns - 1]) <$> [0 .. rows - 1]
   where
     allKeySeq = take numPairs . uniq $ generatePairs
     numPairs = rows * columns

@@ -64,7 +64,7 @@ test = do
       -- let currentState = defaultState
 
       it "todo: implement" $ do
-        1 `shouldBe` 1
+        True `shouldBe` True
 
     context "with action IncrementMouseCursor" $ do
       context "when repetition is 1" $ do
@@ -137,7 +137,7 @@ test = do
     context "with action HandleKeyInput" $ do
       context "when mode is ModeSearch" $ do
         it "todo: implement" $ do
-          1 `shouldBe` 1
+          True `shouldBe` True
 
       context "when mode is ModeHints" $ do
         context "when there are no matches" $ do

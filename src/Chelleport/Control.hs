@@ -1,12 +1,13 @@
 module Chelleport.Control where
 
-import Chelleport.KeySequence (isAlphabetic, isKeycodeDigit)
+import Chelleport.KeySequence (isAlphabetic, isKeycodeDigit, toKeyChar)
 import Chelleport.Types
 import Chelleport.Utils
 import Control.Concurrent (threadDelay)
 import Control.Monad (unless)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.Reader (MonadReader (ask))
+import Data.Maybe (fromMaybe)
 import qualified Debug.Trace as Debug
 import Foreign.C.Types
 import qualified Graphics.X11 as X11
@@ -85,6 +86,9 @@ key keycode = (keycode ==) . eventToKeycode
 ctrl :: SDL.KeyboardEventData -> Bool
 ctrl ev = SDL.keyModifierLeftCtrl (keyModifier ev) || SDL.keyModifierRightCtrl (keyModifier ev)
 
+alt :: SDL.KeyboardEventData -> Bool
+alt ev = SDL.keyModifierLeftAlt (keyModifier ev) || SDL.keyModifierRightAlt (keyModifier ev)
+
 shift :: SDL.KeyboardEventData -> Bool
 shift ev = SDL.keyModifierLeftShift (keyModifier ev) || SDL.keyModifierRightShift (keyModifier ev)
 
@@ -93,6 +97,9 @@ anyDigit = isKeycodeDigit . eventToKeycode
 
 anyAlphabetic :: SDL.KeyboardEventData -> Bool
 anyAlphabetic = isAlphabetic . eventToKeycode
+
+hjkl :: SDL.KeyboardEventData -> Bool
+hjkl = (`elem` ("HJKL" :: String)) . fromMaybe ' ' . toKeyChar . eventToKeycode
 
 hjklDirection :: Char -> Direction
 hjklDirection = \case

@@ -16,9 +16,8 @@
       std::chrono::duration_cast<std::chrono::microseconds>(end - start);      \
   std::cout << label << ": " << duration.count() / 1000.0 << " ms" << std::endl;
 
-extern "C" {
-OCRMatch *findWordCoordinates(const char *image_path, /* returns */ int *size);
-}
+extern "C" OCRMatch *findWordCoordinates(const char *image_path,
+                                         /* returns */ int *size);
 
 std::vector<OCRMatch> extractTextMatches(const char *imagePath);
 

@@ -26,12 +26,12 @@ test = do
   describe "#generateGrid" $ do
     it "generates grid of key sequences" $ do
       generateGrid 0 (4, 4) "ABCDEF"
-        `shouldBe` Just [["AE", "BD", "CC", "BB"], ["AC", "FD", "EE", "EC"], ["FB", "EA", "DF", "DD"], ["CA", "DB", "CE", "BF"]]
+        `shouldBe` Right [["AE", "BD", "CC", "BB"], ["AC", "FD", "EE", "EC"], ["FB", "EA", "DF", "DD"], ["CA", "DB", "CE", "BF"]]
 
     context "when the the keys set is too short" $ do
       it "cycles back to first character" $ do
         generateGrid 0 (4, 4) "AB"
-          `shouldBe` Nothing
+          `shouldBe` Left "Row/Column counts too high"
 
   describe "#findMatchPosition" $ do
     it "returns the position of the matching key sequence" $ do

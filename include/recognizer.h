@@ -10,7 +10,7 @@
 #define MIN_CHARACTER_COUNT 3
 const tesseract::PageIteratorLevel ITER_LEVEL = tesseract::RIL_WORD;
 
-// NOTE: Remember to update size and alignment in ocr hs module on change
+// NOTE: Remember to update size and alignment in hs type on change
 struct OCRMatch {
   int startX, startY;
   int endX, endY;

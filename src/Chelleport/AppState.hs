@@ -9,13 +9,12 @@ import Chelleport.Types
 import Chelleport.Utils (cIntToInt, clamp, intToCInt, isEmpty, itemAt)
 import Control.Monad (replicateM_)
 import Data.Char (toLower)
-import Data.List (isInfixOf)
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (isJust)
 import qualified Text.Fuzzy as Fuzzy
 
 initialState :: (Monad m) => m (State, Maybe AppAction)
 initialState = do
-  let cells = fromMaybe (pure undefined) $ generateGrid 0 (rows, columns) hintKeys
+  let cells = either error id $ generateGrid 0 (rows, columns) hintKeys
   pure (defaultAppState {stateGrid = cells}, Just $ SetMode defaultHintsMode)
   where
     rows = 9

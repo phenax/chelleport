@@ -9,8 +9,7 @@
 #include "../include/libchelleport.h"
 #include "../include/recognizer.h"
 
-extern "C" {
-OCRMatch *findWordCoordinates(const char *image_path, int *size) {
+extern "C" OCRMatch *findWordCoordinates(const char *image_path, int *size) {
   std::vector<OCRMatch> matches;
   MEASURE("OCR", { matches = extractTextMatches(image_path); });
 
@@ -21,7 +20,6 @@ OCRMatch *findWordCoordinates(const char *image_path, int *size) {
 
   *size = matches.size();
   return ptr;
-}
 }
 
 std::vector<OCRMatch> extractTextMatches(const char *imagePath) {

@@ -3,7 +3,7 @@ module Chelleport where
 import Chelleport.AppShell (setupAppShell)
 import qualified Chelleport.AppState as AppState
 import Chelleport.Context (initializeContext)
-import Chelleport.Control (anyAlphabetic, anyDigit, checkKey, ctrl, eventToKeycode, hjklDirection, key, pressed, released, shift)
+import Chelleport.Control (anyAlphabetic, anyDigit, checkKey, ctrl, eventToKeycode, hjkl, hjklDirection, key, pressed, released, shift)
 import Chelleport.KeySequence (keycodeToInt, toKeyChar)
 import Chelleport.Types
 import Chelleport.Utils ((<||>))
@@ -24,9 +24,7 @@ run = do
     runAppWithCtx ctx = (`runReaderT` ctx) . runAppM
 
 eventHandler :: State -> SDL.Event -> Maybe AppAction
-eventHandler state event = do
-  let hjkl = (`elem` ("HJKL" :: String)) . fromMaybe ' ' . toKeyChar . eventToKeycode
-
+eventHandler state event =
   case SDL.eventPayload event of
     SDL.QuitEvent -> Just ShutdownApp
     SDL.KeyboardEvent ev
@@ -64,10 +62,10 @@ eventHandler state event = do
             then Just $ ChainMouseClick RightClick
             else Just $ TriggerMouseClick RightClick
       -- 0-9: Repetition digit
-      | checkKey [anyDigit, pressed] ev ->
+      | checkKey [anyDigit, not . ctrl, pressed] ev ->
           Just $ UpdateRepetition (fromMaybe 0 $ keycodeToInt $ eventToKeycode ev)
       -- A-Z: hint keys and search text
-      | checkKey [anyAlphabetic, pressed] ev ->
+      | checkKey [anyAlphabetic, not . ctrl, pressed] ev ->
           Just $ HandleKeyInput $ eventToKeycode ev
       -- Shift press/release: Toggle shift mode
       | checkKey [pressed, key SDL.KeycodeRShift <||> key SDL.KeycodeLShift] ev ->
