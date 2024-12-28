@@ -10,6 +10,7 @@ import Chelleport.Utils ((<||>))
 import qualified Chelleport.View as View
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader (ReaderT (runReaderT))
+import Data.Default (Default (def))
 import Data.Maybe (fromMaybe)
 import qualified SDL
 
@@ -33,10 +34,10 @@ eventHandler state event =
           Just ShutdownApp
       -- <C-s>: Enable search mode
       | checkKey [ctrl, key SDL.KeycodeS, pressed] ev ->
-          Just $ SetMode defaultSearchMode
+          Just $ SetMode $ ModeSearch def
       -- <C-t>: Enable hints mode
       | checkKey [ctrl, key SDL.KeycodeT, pressed] ev ->
-          Just $ SetMode defaultHintsMode
+          Just $ SetMode $ ModeHints def
       -- <C-n>, <C-p>: Search increment next/prev
       | checkKey [ctrl, key SDL.KeycodeN, pressed] ev ->
           Just $ IncrementHighlightIndex (stateRepetition state)

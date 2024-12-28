@@ -32,11 +32,11 @@ test = do
       join (stateGrid initState) `shouldBe` uniq (join $ stateGrid initState)
 
     context "when config specifies mode" $ do
-      let currentConfig = config {configMode = defaultSearchMode}
+      let currentConfig = config {configMode = ModeSearch def}
 
       it "continues to set given mode" $ do
         ((_, action), _) <- runWithMocks $ initialState currentConfig
-        action `shouldBe` Just (SetMode defaultSearchMode)
+        action `shouldBe` Just (SetMode $ ModeSearch def)
 
   describe "#update" $ do
     let defaultState = def {stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]]}
@@ -152,7 +152,7 @@ test = do
 
       context "when mode is ModeHints" $ do
         context "when there are no matches" $ do
-          let currentState = defaultState {stateKeySequence = "D", stateMode = defaultHintsMode}
+          let currentState = defaultState {stateKeySequence = "D", stateMode = ModeHints def}
 
           context "when input key sequence has matching values in grid" $ do
             it "does not update" $ do
@@ -167,7 +167,7 @@ test = do
               nextState `shouldBe` currentState {stateKeySequence = "DE"}
 
         context "when there are matches" $ do
-          let currentState = defaultState {stateKeySequence = "DE", stateMode = defaultHintsMode}
+          let currentState = defaultState {stateKeySequence = "DE", stateMode = ModeHints def}
 
           context "when input key sequence does not have matching values in grid" $ do
             it "adds key to key sequence and enables isMatched" $ do
@@ -235,13 +235,13 @@ test = do
       let currentState = defaultState
 
       it "updates mode in state and continues to initialize mode" $ do
-        ((nextState, action), _) <- runWithMocks $ update flush currentState $ SetMode defaultHintsMode
-        nextState `shouldBe` currentState {stateMode = defaultHintsMode, stateIsModeInitialized = False}
+        ((nextState, action), _) <- runWithMocks $ update flush currentState $ SetMode $ ModeHints def
+        nextState `shouldBe` currentState {stateMode = ModeHints def, stateIsModeInitialized = False}
         action `shouldBe` Just InitializeMode
 
     context "with action InitializeMode" $ do
       context "when mode is ModeHints" $ do
-        let currentState = defaultState {stateMode = defaultHintsMode, stateIsModeInitialized = False}
+        let currentState = defaultState {stateMode = ModeHints def, stateIsModeInitialized = False}
 
         it "updates initialization state to true" $ do
           ((nextState, action), _) <- runWithMocks $ update flush currentState InitializeMode
@@ -249,7 +249,7 @@ test = do
           action `shouldBe` Nothing
 
       context "when mode is ModeSearch" $ do
-        let currentState = defaultState {stateMode = defaultSearchMode, stateIsModeInitialized = False}
+        let currentState = defaultState {stateMode = ModeSearch def, stateIsModeInitialized = False}
 
         it "captures screenshot for word search" $ do
           ((_, _), mock) <- runWithMocks $ do
@@ -270,10 +270,11 @@ test = do
             `shouldBe` currentState
               { stateIsModeInitialized = True,
                 stateMode =
-                  defaultSearchMode
-                    { searchWords = [matchWord],
-                      searchFilteredWords = [matchWord]
-                    }
+                  ModeSearch $
+                    def
+                      { searchWords = [matchWord],
+                        searchFilteredWords = [matchWord]
+                      }
               }
 
     context "with action ShutdownApp" $ do

@@ -18,27 +18,33 @@ type KeySequence = [Char]
 
 type KeyGrid = [[Cell]]
 
-data Mode
-  = ModeHints
-  | ModeSearch
-      { searchWords :: [OCRMatch],
-        searchFilteredWords :: [OCRMatch],
-        searchInputText :: String,
-        searchHighlightedIndex :: Int
-      }
+data ModeSearchData = ModeSearchData
+  { searchWords :: [OCRMatch],
+    searchFilteredWords :: [OCRMatch],
+    searchInputText :: String,
+    searchHighlightedIndex :: Int
+  }
   deriving (Show, Eq)
 
-defaultSearchMode :: Mode
-defaultSearchMode =
-  ModeSearch
-    { searchWords = [],
-      searchFilteredWords = [],
-      searchInputText = "",
-      searchHighlightedIndex = 0
-    }
+instance Default ModeSearchData where
+  def =
+    ModeSearchData
+      { searchWords = [],
+        searchFilteredWords = [],
+        searchInputText = "",
+        searchHighlightedIndex = 0
+      }
 
-defaultHintsMode :: Mode
-defaultHintsMode = ModeHints
+data ModeHintsData = ModeHintsData
+  deriving (Show, Eq)
+
+instance Default ModeHintsData where
+  def = ModeHintsData
+
+data Mode
+  = ModeHints {modeHintsData :: ModeHintsData}
+  | ModeSearch {modeSearchData :: ModeSearchData}
+  deriving (Show, Eq)
 
 data State = State
   { stateGrid :: KeyGrid,
@@ -62,7 +68,7 @@ instance Default State where
         stateIsDragging = False,
         stateRepetition = 1,
         stateIsModeInitialized = False,
-        stateMode = ModeHints
+        stateMode = ModeHints def
       }
 
 data Direction = DirUp | DirDown | DirLeft | DirRight
@@ -138,4 +144,4 @@ data Configuration = Configuration
   deriving (Show, Eq)
 
 instance Default Configuration where
-  def = Configuration {configMode = defaultHintsMode, configShowHelp = False}
+  def = Configuration {configMode = ModeHints def, configShowHelp = False}

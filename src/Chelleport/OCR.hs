@@ -31,6 +31,7 @@ instance (MonadIO m) => MonadOCR (AppM m) where
       pure path
 
   getWordsInImage filePath = liftIO $ do
+    -- result `seq` pure result -- Strict eval
     findWordCoordinates filePath <* removeFile filePath
 
 findWordCoordinates :: String -> IO [OCRMatch]

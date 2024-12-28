@@ -32,7 +32,7 @@ update _ state (ChainMouseClick btn) = do
   pure (state {stateRepetition = 1}, Just ResetKeys)
 
 -- HINTS MODE: Act on key inputs
-update _ state@(State {stateMode = ModeHints}) (HandleKeyInput keycode) = do
+update _ state@(State {stateMode = ModeHints {}}) (HandleKeyInput keycode) = do
   case (toKeyChar keycode, validNextKeys) of
     (Just keyChar, Just validChars')
       | stateIsMatched state && keyChar `elem` ("HJKL" :: String) -> do
@@ -48,21 +48,21 @@ update _ state@(State {stateMode = ModeHints}) (HandleKeyInput keycode) = do
     validNextKeys = nextChars (stateKeySequence state) (stateGrid state)
 
 -- SEARCH MODE: Act on key inputs
-update _ state@(State {stateMode = ModeSearch {searchWords, searchInputText}}) (HandleKeyInput keycode) = do
+update _ state@(State {stateMode = ModeSearch (ModeSearchData {searchWords, searchInputText})}) (HandleKeyInput keycode) = do
   case toKeyChar keycode of
     Just keyChar -> do
       let searchText = searchInputText ++ [toLower keyChar]
       let matches = filterMatches searchText
-      let highlightedIndex = clamp (0, length matches - 1) (searchHighlightedIndex mode)
+      let highlightedIndex = clamp (0, length matches - 1) (searchHighlightedIndex $ modeSearchData mode)
       let updatedMode =
-            mode
+            (modeSearchData mode)
               { searchInputText = searchText,
                 searchFilteredWords = matches,
                 searchHighlightedIndex = highlightedIndex
               }
       let highlightedWord = matches `itemAt` highlightedIndex
       action <- traverse (fmap MoveMousePosition . wordPosition) highlightedWord
-      pure (state {stateMode = updatedMode}, action)
+      pure (state {stateMode = ModeSearch updatedMode}, action)
     _ -> do
       pure (state, Nothing)
   where
@@ -76,15 +76,15 @@ update _ state (IncrementHighlightIndex n) = do
   case stateMode state of
     ModeSearch {} -> do
       action <- traverse (fmap MoveMousePosition . wordPosition) highlightedWord
-      pure (state {stateRepetition = 1, stateMode = mode {searchHighlightedIndex = highlightedIndexClamped}}, action)
+      pure (state {stateRepetition = 1, stateMode = ModeSearch $ searchData {searchHighlightedIndex = highlightedIndexClamped}}, action)
       where
-        highlightedWord = searchFilteredWords mode `itemAt` highlightedIndexClamped
-        highlightedIndex = searchHighlightedIndex mode + n
+        highlightedWord = searchFilteredWords searchData `itemAt` highlightedIndexClamped
+        highlightedIndex = searchHighlightedIndex searchData + n
         highlightedIndexClamped =
           if highlightedIndex < 0
-            then length (searchFilteredWords mode) - 1
-            else highlightedIndex `mod` length (searchFilteredWords mode)
-        mode = stateMode state
+            then length (searchFilteredWords searchData) - 1
+            else highlightedIndex `mod` length (searchFilteredWords searchData)
+        searchData = modeSearchData $ stateMode state
     _ -> pure (state, Nothing)
 
 -- Move mouse incrementally
@@ -135,14 +135,14 @@ update _ state ResetKeys = do
       Nothing
     )
   where
-    resetMode mode@ModeHints = mode
-    resetMode (ModeSearch {searchWords}) =
-      defaultSearchMode {searchWords = searchWords, searchFilteredWords = searchWords}
+    resetMode mode@(ModeHints {}) = mode
+    resetMode (ModeSearch searchData@(ModeSearchData {searchWords})) =
+      ModeSearch (searchData {searchWords = searchWords, searchFilteredWords = searchWords})
 
 -- Initialize current mode
 update flush state InitializeMode =
   case stateMode state of
-    ModeHints -> pure (state {stateIsModeInitialized = True}, Nothing)
+    ModeHints {} -> pure (state {stateIsModeInitialized = True}, Nothing)
     ModeSearch {} -> do
       position <- windowPosition
       size <- windowSize
@@ -151,8 +151,8 @@ update flush state InitializeMode =
       showWindow
       flush
       matches <- getWordsInImage screenshot
-      let updatedMode = (stateMode state) {searchWords = matches, searchFilteredWords = matches}
-      pure (state {stateMode = updatedMode, stateIsModeInitialized = True}, Nothing)
+      let updatedSearchData = (modeSearchData $ stateMode state) {searchWords = matches, searchFilteredWords = matches}
+      pure (state {stateMode = ModeSearch updatedSearchData, stateIsModeInitialized = True}, Nothing)
 
 -- Set mode
 update _ state (SetMode mode) = do

@@ -11,34 +11,29 @@ import Foreign.C (CInt)
 
 render :: (MonadDraw m) => State -> m ()
 render state = case stateMode state of
-  ModeHints -> renderHintsView state
-  ModeSearch {searchFilteredWords, searchHighlightedIndex} ->
-    renderSearchView state searchFilteredWords searchHighlightedIndex
+  ModeHints _ -> renderHintsView state
+  ModeSearch modeSearchData -> renderSearchView state modeSearchData
 
-getSearchText :: State -> String
-getSearchText state = case stateMode state of
-  ModeHints -> ""
-  ModeSearch {searchInputText, searchFilteredWords, searchHighlightedIndex} ->
+getSearchText :: State -> ModeSearchData -> String
+getSearchText state (ModeSearchData {searchInputText, searchFilteredWords, searchHighlightedIndex}) = searchText
+  where
     searchText
-    where
-      searchText
-        | stateIsModeInitialized state = "Searching (" ++ matchCount ++ "): " ++ searchInputText
-        | otherwise = "Loading..."
-      matchCount
-        | isEmpty searchFilteredWords = "0/0"
-        | otherwise = show (searchHighlightedIndex + 1) ++ "/" ++ show (length searchFilteredWords)
+      | stateIsModeInitialized state = "Searching (" ++ matchCount ++ "): " ++ searchInputText
+      | otherwise = "Loading..."
+    matchCount
+      | isEmpty searchFilteredWords = "0/0"
+      | otherwise = show (searchHighlightedIndex + 1) ++ "/" ++ show (length searchFilteredWords)
 
-renderSearchView :: (MonadDraw m) => State -> [OCRMatch] -> Int -> m ()
-renderSearchView state matches highlightedIndex = do
+renderSearchView :: (MonadDraw m) => State -> ModeSearchData -> m ()
+renderSearchView state searchData@(ModeSearchData {searchFilteredWords, searchHighlightedIndex}) = do
   renderGridLines state
 
-  forM_ (zip [0 ..] matches) $ \(index, OCRMatch {matchStartX, matchStartY, matchEndX, matchEndY}) -> do
-    setDrawColor $ if highlightedIndex == index then colorAccent else colorLightGray
+  forM_ (zip [0 ..] searchFilteredWords) $ \(index, OCRMatch {matchStartX, matchStartY, matchEndX, matchEndY}) -> do
+    setDrawColor $ if searchHighlightedIndex == index then colorAccent else colorLightGray
     fillRectVertices (matchStartX, matchStartY) (matchEndX, matchEndY)
 
   (w, h) <- windowSize
-  drawText (w `div` 2, h `div` 2) colorAccent FontSM (Text.pack $ getSearchText state)
-  pure ()
+  void $ drawText (w `div` 2, h `div` 2) colorWhite FontSM (Text.pack $ getSearchText state searchData)
 
 renderHintsView :: (MonadDraw m) => State -> m ()
 renderHintsView state = do

@@ -13,12 +13,12 @@ extern "C" OCRMatch *findWordCoordinates(const char *image_path, int *size) {
   OCRMatchSet matches;
   MEASURE("OCR", { matches = extractTextMatches(image_path); });
 
-  std::cout << "Match count: " << matches.size() << std::endl;
-
   static OCRMatch *ptr = new OCRMatch[matches.size()];
   std::copy(matches.begin(), matches.end(), ptr);
 
   *size = matches.size();
+  std::cout << "Match count: " << *size << std::endl;
+
   return ptr;
 }
 

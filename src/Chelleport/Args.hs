@@ -13,6 +13,6 @@ parseArgs (arg : args)
   | otherwise = Left $ "Unrecognized argument: " ++ arg
 
 updateMode :: String -> Configuration -> Either String Configuration
-updateMode "hints" cfg = Right cfg {configMode = defaultHintsMode}
-updateMode "search" cfg = Right cfg {configMode = defaultSearchMode}
+updateMode "hints" cfg = Right cfg {configMode = ModeHints def}
+updateMode "search" cfg = Right cfg {configMode = ModeSearch def}
 updateMode mode _ = Left $ "Invalid mode: " ++ mode

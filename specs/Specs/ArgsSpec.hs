@@ -20,10 +20,10 @@ test = do
 
     context "when args contains -m or --mode with a valid mode" $ do
       it "parses configuration with mode" $ do
-        parseArgs ["-m", "search"] `shouldBe` Right (def {configMode = defaultSearchMode})
-        parseArgs ["--mode", "search"] `shouldBe` Right (def {configMode = defaultSearchMode})
-        parseArgs ["-m", "hints"] `shouldBe` Right (def {configMode = defaultHintsMode})
-        parseArgs ["--mode", "hints"] `shouldBe` Right (def {configMode = defaultHintsMode})
+        parseArgs ["-m", "search"] `shouldBe` Right (def {configMode = ModeSearch def})
+        parseArgs ["--mode", "search"] `shouldBe` Right (def {configMode = ModeSearch def})
+        parseArgs ["-m", "hints"] `shouldBe` Right (def {configMode = ModeHints def})
+        parseArgs ["--mode", "hints"] `shouldBe` Right (def {configMode = ModeHints def})
 
     context "when args contains -m or --mode with an invalid mode" $ do
       it "returns with error message" $ do
