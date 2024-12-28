@@ -33,7 +33,7 @@ instance (MonadIO m) => MonadDraw (AppM m) where
     let rect = SDL.Rectangle (SDL.P $ SDL.V2 x y) (SDL.V2 w h)
     SDL.fillRect renderer (Just rect)
 
-  drawText (x, y) (TextStyle {textColor, textSize}) text = do
+  drawText (x, y) (TextStyle {textColor, textSize, textAlign}) text = do
     DrawContext {ctxRenderer = renderer, ctxFontSmall, ctxFontLarge} <- ask
     let font = case textSize of
           FontSM -> ctxFontSmall
@@ -47,9 +47,13 @@ instance (MonadIO m) => MonadDraw (AppM m) where
     let textWidth = SDL.textureWidth textureInfo
     let textHeight = SDL.textureHeight textureInfo
 
+    let (left, top) = case textAlign of
+          AlignLeft -> (x, y)
+          AlignCenter -> (x - textWidth `div` 2, y)
+
     -- Render the texture
     SDL.copy renderer texture Nothing $
-      Just (SDL.Rectangle (SDL.P $ SDL.V2 x y) (SDL.V2 textWidth textHeight))
+      Just (SDL.Rectangle (SDL.P $ SDL.V2 left top) (SDL.V2 textWidth textHeight))
     SDL.destroyTexture texture
 
     pure (textWidth, textHeight)

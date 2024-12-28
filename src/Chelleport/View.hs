@@ -33,8 +33,7 @@ renderSearchView state searchData@(ModeSearchData {searchFilteredWords, searchHi
     fillRectVertices (matchStartX, matchStartY) (matchEndX, matchEndY)
 
   (w, h) <- windowSize
-  let textStyle = TextStyle {textColor = colorWhite, textSize = FontSM}
-  void $ drawText (w `div` 2, h `div` 2) textStyle (Text.pack $ getSearchText state searchData)
+  void $ drawText (w `div` 2, h `div` 2) searchingTextStyle (Text.pack $ getSearchText state searchData)
 
 renderHintsView :: (MonadDraw m) => State -> ModeHintsData -> m ()
 renderHintsView state (ModeHintsData {stateGrid, stateKeySequence, stateIsMatched}) = do

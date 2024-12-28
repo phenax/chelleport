@@ -5,10 +5,10 @@ import Foreign.C (CFloat)
 import qualified SDL
 
 searchingTextStyle :: TextStyle
-searchingTextStyle = TextStyle {textColor = colorWhite, textSize = FontSM}
+searchingTextStyle = TextStyle {textColor = colorWhite, textSize = FontSM, textAlign = AlignCenter}
 
 hintLabelTextStyle :: TextStyle
-hintLabelTextStyle = TextStyle {textColor = colorWhite, textSize = FontLG}
+hintLabelTextStyle = TextStyle {textColor = colorWhite, textSize = FontLG, textAlign = AlignLeft}
 
 colorWhite :: Color
 colorWhite = SDL.V4 255 255 255 255

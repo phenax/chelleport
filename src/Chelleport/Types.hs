@@ -153,8 +153,12 @@ data Configuration = Configuration
 instance Default Configuration where
   def = Configuration {configMode = ModeHints def, configShowHelp = False}
 
+data TextAlign = AlignLeft | AlignCenter
+  deriving (Show, Eq)
+
 data TextStyle = TextStyle
   { textColor :: Color,
-    textSize :: FontSize
+    textSize :: FontSize,
+    textAlign :: TextAlign
   }
   deriving (Show, Eq)
