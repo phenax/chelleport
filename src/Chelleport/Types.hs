@@ -52,18 +52,18 @@ data State = State
   }
   deriving (Show, Eq)
 
-defaultAppState :: State
-defaultAppState =
-  State
-    { stateGrid = [],
-      stateKeySequence = "",
-      stateIsMatched = False,
-      stateIsShiftPressed = False,
-      stateIsDragging = False,
-      stateRepetition = 1,
-      stateIsModeInitialized = False,
-      stateMode = ModeHints
-    }
+instance Default State where
+  def =
+    State
+      { stateGrid = [],
+        stateKeySequence = "",
+        stateIsMatched = False,
+        stateIsShiftPressed = False,
+        stateIsDragging = False,
+        stateRepetition = 1,
+        stateIsModeInitialized = False,
+        stateMode = ModeHints
+      }
 
 data Direction = DirUp | DirDown | DirLeft | DirRight
   deriving (Show, Eq)

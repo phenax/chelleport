@@ -39,7 +39,7 @@ test = do
         action `shouldBe` Just (SetMode defaultSearchMode)
 
   describe "#update" $ do
-    let defaultState = defaultAppState {stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]]}
+    let defaultState = def {stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]]}
 
     context "with action ChainMouseClick" $ do
       context "when repetition is 1" $ do

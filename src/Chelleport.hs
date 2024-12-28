@@ -45,8 +45,8 @@ eventHandler state event =
       -- <C-hjkl>: Movement
       | checkKey [ctrl, hjkl, pressed] ev ->
           MoveMouseInDirection . hjklDirection <$> toKeyChar (eventToKeycode ev)
-      -- Space / Shift+Space : Left click/chain left click
-      | checkKey [key SDL.KeycodeSpace, pressed] ev ->
+      -- Space / Enter / Shift+Space / Shift+Enter : Left click/chain left click
+      | checkKey [key SDL.KeycodeSpace <||> key SDL.KeycodeReturn, pressed] ev ->
           if shift ev
             then Just $ ChainMouseClick LeftClick
             else Just $ TriggerMouseClick LeftClick

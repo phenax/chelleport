@@ -9,6 +9,7 @@ import Chelleport.Types
 import Chelleport.Utils (cIntToInt, clamp, intToCInt, isEmpty, itemAt)
 import Control.Monad (replicateM_)
 import Data.Char (toLower)
+import Data.Default (Default (def))
 import Data.Maybe (isJust)
 import qualified Text.Fuzzy as Fuzzy
 
@@ -16,7 +17,7 @@ initialState :: (Monad m) => Configuration -> m (State, Maybe AppAction)
 initialState config = do
   let cells = either error id $ generateGrid 0 (rows, columns) hintKeys
   let action = Just $ SetMode $ configMode config
-  pure (defaultAppState {stateGrid = cells}, action)
+  pure (def {stateGrid = cells}, action)
   where
     rows = 9
     columns = 16

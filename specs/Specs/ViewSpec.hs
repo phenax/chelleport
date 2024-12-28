@@ -3,12 +3,13 @@ module Specs.ViewSpec where
 import Chelleport.Config
 import Chelleport.Types
 import Chelleport.View
+import Data.Default (Default (def))
 import Test.Hspec
 import TestUtils
 
 test :: SpecWith ()
 test = do
-  let defaultState = defaultAppState {stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]]}
+  let defaultState = def {stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]]}
 
   describe "#render" $ do
     context "when key sequence is empty" $ do

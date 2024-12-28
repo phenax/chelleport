@@ -2,6 +2,7 @@ module Specs.AppEventSpec where
 
 import Chelleport (eventHandler)
 import Chelleport.Types
+import Data.Default (Default (def))
 import qualified SDL
 import SDL.Internal.Numbered (FromNumber (fromNumber))
 import Test.Hspec
@@ -26,7 +27,7 @@ test = do
                   SDL.keyboardEventKeyMotion = motion
                 }
     let defaultMod = fromNumber 0
-    let currentState = defaultAppState
+    let currentState = def
 
     context "when window quit event is triggered" $ do
       it "shuts down app" $ do
@@ -56,6 +57,21 @@ test = do
       context "when pressed with left shift" $ do
         it "chains left mouse button click" $ do
           let action = eventHandler currentState $ mkKeyboardEvent SDL.KeycodeSpace SDL.Pressed (defaultMod {SDL.keyModifierLeftShift = True})
+          action `shouldBe` Just (ChainMouseClick LeftClick)
+
+    context "when enter key is pressed" $ do
+      it "triggers left mouse button click" $ do
+        let action = eventHandler currentState $ mkKeyboardEvent SDL.KeycodeReturn SDL.Pressed defaultMod
+        action `shouldBe` Just (TriggerMouseClick LeftClick)
+
+      context "when pressed with right shift" $ do
+        it "chains left mouse button click" $ do
+          let action = eventHandler currentState $ mkKeyboardEvent SDL.KeycodeReturn SDL.Pressed (defaultMod {SDL.keyModifierRightShift = True})
+          action `shouldBe` Just (ChainMouseClick LeftClick)
+
+      context "when pressed with left shift" $ do
+        it "chains left mouse button click" $ do
+          let action = eventHandler currentState $ mkKeyboardEvent SDL.KeycodeReturn SDL.Pressed (defaultMod {SDL.keyModifierLeftShift = True})
           action `shouldBe` Just (ChainMouseClick LeftClick)
 
     context "when minus key is pressed" $ do
