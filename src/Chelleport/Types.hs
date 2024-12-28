@@ -47,6 +47,7 @@ data State = State
     stateIsShiftPressed :: Bool,
     stateIsDragging :: Bool,
     stateRepetition :: Int,
+    stateIsModeInitialized :: Bool,
     stateMode :: Mode
   }
   deriving (Show, Eq)
@@ -60,6 +61,7 @@ defaultAppState =
       stateIsShiftPressed = False,
       stateIsDragging = False,
       stateRepetition = 1,
+      stateIsModeInitialized = False,
       stateMode = ModeHints
     }
 
@@ -71,6 +73,7 @@ data AppAction
   | HandleKeyInput SDL.Keycode
   | IncrementHighlightIndex Int
   | IncrementMouseCursor (Int, Int)
+  | InitializeMode
   | MouseDragEnd
   | MouseDragStart
   | MouseDragToggle

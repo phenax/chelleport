@@ -1,8 +1,8 @@
 module Main where
 
 import qualified Chelleport
-import Chelleport.Args (Configuration (configShowHelp))
 import qualified Chelleport.Args as Args
+import Chelleport.Types
 import qualified System.Environment
 import System.Exit (exitFailure)
 

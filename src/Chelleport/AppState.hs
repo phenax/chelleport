@@ -1,7 +1,6 @@
 module Chelleport.AppState (initialState, update) where
 
-import Chelleport.AppShell (MonadAppShell (hideWindow, showWindow, shutdownApp))
-import Chelleport.Args (Configuration (configMode))
+import Chelleport.AppShell (MonadAppShell (hideWindow, showWindow, shutdownApp), Update)
 import Chelleport.Control (MonadControl (..), directionalIncrement, hjklDirection)
 import Chelleport.Draw (MonadDraw (windowPosition, windowSize), pointerPositionIncrement, screenPositionFromCellPosition, wordPosition)
 import Chelleport.KeySequence (findMatchPosition, generateGrid, nextChars, toKeyChar)
@@ -23,16 +22,16 @@ initialState config = do
     columns = 16
     hintKeys = ['A' .. 'Z']
 
-update :: (MonadAppShell m, MonadDraw m, MonadControl m, MonadOCR m) => State -> AppAction -> m (State, Maybe AppAction)
+update :: (MonadAppShell m, MonadDraw m, MonadControl m, MonadOCR m) => Update m State AppAction
 -- Chain clicks
-update state (ChainMouseClick btn) = do
+update _ state (ChainMouseClick btn) = do
   hideWindow
   replicateM_ (stateRepetition state) $ clickMouseButton btn
   showWindow
   pure (state {stateRepetition = 1}, Just ResetKeys)
 
 -- HINTS MODE: Act on key inputs
-update state@(State {stateMode = ModeHints}) (HandleKeyInput keycode) = do
+update _ state@(State {stateMode = ModeHints}) (HandleKeyInput keycode) = do
   case (toKeyChar keycode, validNextKeys) of
     (Just keyChar, Just validChars')
       | stateIsMatched state && keyChar `elem` ("HJKL" :: String) -> do
@@ -48,7 +47,7 @@ update state@(State {stateMode = ModeHints}) (HandleKeyInput keycode) = do
     validNextKeys = nextChars (stateKeySequence state) (stateGrid state)
 
 -- SEARCH MODE: Act on key inputs
-update state@(State {stateMode = ModeSearch {searchWords, searchInputText}}) (HandleKeyInput keycode) = do
+update _ state@(State {stateMode = ModeSearch {searchWords, searchInputText}}) (HandleKeyInput keycode) = do
   case toKeyChar keycode of
     Just keyChar -> do
       let searchText = searchInputText ++ [toLower keyChar]
@@ -72,7 +71,7 @@ update state@(State {stateMode = ModeSearch {searchWords, searchInputText}}) (Ha
       | otherwise = Fuzzy.original <$> Fuzzy.filter text searchWords "" "" matchText False
 
 -- Increment highlighted index for search mode
-update state (IncrementHighlightIndex n) = do
+update _ state (IncrementHighlightIndex n) = do
   case stateMode state of
     ModeSearch {} -> do
       action <- traverse (fmap MoveMousePosition . wordPosition) highlightedWord
@@ -88,43 +87,43 @@ update state (IncrementHighlightIndex n) = do
     _ -> pure (state, Nothing)
 
 -- Move mouse incrementally
-update state (IncrementMouseCursor (incX, incY)) = do
+update _ state (IncrementMouseCursor (incX, incY)) = do
   (curX, curY) <- getMousePointerPosition
   let count = stateRepetition state
   let pos = (cIntToInt curX + count * incX, cIntToInt curY + count * incY)
   pure (state {stateRepetition = 1}, Just $ MoveMousePosition pos)
 
 -- Mouse button release
-update state MouseDragEnd = do
+update _ state MouseDragEnd = do
   hideWindow
   releaseMouseButton
   showWindow
   pure (state {stateRepetition = 1}, Nothing)
 
 -- Mouse button press
-update state MouseDragStart = do
+update _ state MouseDragStart = do
   hideWindow
   pressMouseButton
   showWindow
   pure (state {stateRepetition = 1}, Nothing)
 
 -- Mouse dragging
-update state MouseDragToggle
+update _ state MouseDragToggle
   | stateIsDragging state = pure (state {stateIsDragging = False}, Just MouseDragEnd)
   | otherwise = do pure (state {stateIsDragging = True}, Just MouseDragStart)
 
 -- Apply movement in given direction
-update state (MoveMouseInDirection direction) = do
+update _ state (MoveMouseInDirection direction) = do
   incr <- pointerPositionIncrement state
   pure (state, Just $ IncrementMouseCursor $ directionalIncrement incr direction)
 
 -- Move mouse to given position
-update state (MoveMousePosition (x, y)) = do
+update _ state (MoveMousePosition (x, y)) = do
   moveMousePointer (intToCInt x) (intToCInt y)
   pure (state, Nothing)
 
 -- Reset entered key sequence and state
-update state ResetKeys = do
+update _ state ResetKeys = do
   pure
     ( state
         { stateKeySequence = [],
@@ -139,33 +138,40 @@ update state ResetKeys = do
     resetMode (ModeSearch {searchWords}) =
       defaultSearchMode {searchWords = searchWords, searchFilteredWords = searchWords}
 
--- Set mode
-update state (SetMode mode) = do
-  case mode of
-    ModeHints -> pure (state {stateMode = mode}, Nothing)
+-- Initialize current mode
+update flush state InitializeMode =
+  case stateMode state of
+    ModeHints -> pure (state {stateIsModeInitialized = True}, Nothing)
     ModeSearch {} -> do
       position <- windowPosition
       size <- windowSize
-      screenshot <- hideWindow >> captureScreenshot position size <* showWindow
+      hideWindow
+      screenshot <- captureScreenshot position size
+      showWindow
+      flush
       matches <- getWordsInImage screenshot
-      let updatedMode = mode {searchWords = matches, searchFilteredWords = matches}
-      pure (state {stateMode = updatedMode}, Nothing)
+      let updatedMode = (stateMode state) {searchWords = matches, searchFilteredWords = matches}
+      pure (state {stateMode = updatedMode, stateIsModeInitialized = True}, Nothing)
+
+-- Set mode
+update _ state (SetMode mode) = do
+  pure (state {stateMode = mode, stateIsModeInitialized = False}, Just InitializeMode)
 
 -- Cleanup everything and exit
-update state ShutdownApp = do
+update _ state ShutdownApp = do
   shutdownApp
   pure (state, Nothing)
 
 -- Trigger click
-update state (TriggerMouseClick btn) = do
+update _ state (TriggerMouseClick btn) = do
   hideWindow
   replicateM_ (stateRepetition state) $ clickMouseButton btn
   pure (state {stateRepetition = 1}, Just ShutdownApp)
 
 -- Set repetition count
-update state (UpdateRepetition count) = do
+update _ state (UpdateRepetition count) = do
   pure (state {stateRepetition = max 1 count}, Nothing)
 
 -- Set/unset whether shift is pressed
-update state (UpdateShiftState shiftPressed) =
+update _ state (UpdateShiftState shiftPressed) =
   pure (state {stateIsShiftPressed = shiftPressed}, Nothing)

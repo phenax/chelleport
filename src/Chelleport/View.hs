@@ -19,8 +19,11 @@ getSearchText :: State -> String
 getSearchText state = case stateMode state of
   ModeHints -> ""
   ModeSearch {searchInputText, searchFilteredWords, searchHighlightedIndex} ->
-    "Searching (" ++ matchCount ++ "): " ++ searchInputText
+    searchText
     where
+      searchText
+        | stateIsModeInitialized state = "Searching (" ++ matchCount ++ "): " ++ searchInputText
+        | otherwise = "Loading..."
       matchCount
         | isEmpty searchFilteredWords = "0/0"
         | otherwise = show (searchHighlightedIndex + 1) ++ "/" ++ show (length searchFilteredWords)

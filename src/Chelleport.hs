@@ -2,7 +2,6 @@ module Chelleport where
 
 import Chelleport.AppShell (setupAppShell)
 import qualified Chelleport.AppState as AppState
-import Chelleport.Args (Configuration)
 import Chelleport.Context (initializeContext)
 import Chelleport.Control (anyAlphabetic, anyDigit, checkKey, ctrl, eventToKeycode, hjkl, hjklDirection, key, pressed, released, shift)
 import Chelleport.KeySequence (keycodeToInt, toKeyChar)

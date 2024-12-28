@@ -1,9 +1,8 @@
-module Chelleport.AppShell (setupAppShell, MonadAppShell (..)) where
+module Chelleport.AppShell where
 
 import Chelleport.Config
 import Chelleport.Control (MonadControl (releaseMouseButton))
 import Chelleport.Types
-import Control.Monad (foldM)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.RWS (MonadReader (ask), asks)
 import qualified Graphics.X11 as X11
@@ -29,7 +28,9 @@ instance (MonadIO m) => MonadAppShell (AppM m) where
       X11.closeDisplay $ ctxX11Display ctx
       exitSuccess
 
-type Update m state appAction = state -> appAction -> m (state, Maybe appAction)
+type Flush m = m ()
+
+type Update m state appAction = Flush m -> state -> appAction -> m (state, Maybe appAction)
 
 type EventHandler state appAction = state -> SDL.Event -> Maybe appAction
 
@@ -38,7 +39,7 @@ type View m state = state -> m ()
 type Initializer m state appAction = m (state, Maybe appAction)
 
 setupAppShell ::
-  (MonadIO m) =>
+  (MonadIO m, Show state) =>
   DrawContext ->
   Initializer m state appAction ->
   Update m state appAction ->
@@ -50,20 +51,21 @@ setupAppShell (DrawContext {ctxRenderer = renderer}) getInitState update eventHa
   appLoop state
   where
     appLoop currentState = do
+      renderScreen currentState
+      newState <- SDL.waitEvent >>= evaluateEvent currentState
+      appLoop newState
+
+    renderScreen state = do
       SDL.rendererDrawColor renderer $= colorBackground
       SDL.clear renderer
-      draw currentState
+      draw state
       SDL.present renderer
-
-      newState <- SDL.pollEvents >>= foldM evaluateEvent currentState
-
-      appLoop newState
 
     evaluateEvent state event =
       maybe (pure state) (updateState state) (eventHandler state event)
 
     updateState state action =
-      update state action >>= evalUpdateResult
+      update (renderScreen state) state action >>= evalUpdateResult
 
     evalUpdateResult (state, Nothing) = pure state
     evalUpdateResult (state, Just action) = updateState state action
