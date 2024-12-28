@@ -17,19 +17,17 @@ test = do
 
     it "returns the initial state of the app" $ do
       ((initState, _), _) <- runWithMocks $ initialState config
-      stateKeySequence initState `shouldBe` []
-      stateIsMatched initState `shouldBe` False
       stateIsShiftPressed initState `shouldBe` False
+      case stateMode initState of
+        ModeHints hintsData -> do
+          stateKeySequence hintsData `shouldBe` []
+          stateIsMatched hintsData `shouldBe` False
+        _ -> undefined
 
     it "returns grid with 16x9 key sequences" $ do
       ((initState, _), _) <- runWithMocks $ initialState config
-      length (stateGrid initState) `shouldBe` 9
-      stateGrid initState `shouldSatisfy` all ((== 16) . length)
-      stateGrid initState `shouldSatisfy` all (all ((== 2) . length))
-
-    it "returns grid with all unique key sequences" $ do
-      ((initState, _), _) <- runWithMocks $ initialState config
-      join (stateGrid initState) `shouldBe` uniq (join $ stateGrid initState)
+      stateGridRows initState `shouldBe` 9
+      stateGridCols initState `shouldBe` 16
 
     context "when config specifies mode" $ do
       let currentConfig = config {configMode = ModeSearch def}
@@ -39,7 +37,13 @@ test = do
         action `shouldBe` Just (SetMode $ ModeSearch def)
 
   describe "#update" $ do
-    let defaultState = def {stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]]}
+    let defaultHintModeData = def {stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]]}
+    let defaultState =
+          def
+            { stateGridRows = 2,
+              stateGridCols = 2,
+              stateMode = ModeHints defaultHintModeData
+            }
 
     context "with action ChainMouseClick" $ do
       context "when repetition is 1" $ do
@@ -152,7 +156,7 @@ test = do
 
       context "when mode is ModeHints" $ do
         context "when there are no matches" $ do
-          let currentState = defaultState {stateKeySequence = "D", stateMode = ModeHints def}
+          let currentState = defaultState {stateMode = ModeHints $ defaultHintModeData {stateKeySequence = "D"}}
 
           context "when input key sequence has matching values in grid" $ do
             it "does not update" $ do
@@ -164,15 +168,15 @@ test = do
             it "adds key to key sequence" $ do
               ((nextState, action), _) <- runWithMocks $ update flush currentState $ HandleKeyInput SDL.KeycodeE
               action `shouldBe` Nothing
-              nextState `shouldBe` currentState {stateKeySequence = "DE"}
+              nextState `shouldBe` currentState {stateMode = ModeHints defaultHintModeData {stateKeySequence = "DE"}}
 
         context "when there are matches" $ do
-          let currentState = defaultState {stateKeySequence = "DE", stateMode = ModeHints def}
+          let currentState = defaultState {stateMode = ModeHints $ defaultHintModeData {stateKeySequence = "DE"}}
 
           context "when input key sequence does not have matching values in grid" $ do
             it "adds key to key sequence and enables isMatched" $ do
               ((nextState, _), _) <- runWithMocks $ update flush currentState $ HandleKeyInput SDL.KeycodeF
-              nextState `shouldBe` currentState {stateKeySequence = "DEF", stateIsMatched = True}
+              nextState `shouldBe` currentState {stateMode = ModeHints defaultHintModeData {stateKeySequence = "DEF", stateIsMatched = True}}
 
             it "continues with MoveMousePosition action at center of matched cell" $ do
               ((_, action), _) <- runWithMocks $ do
@@ -229,7 +233,11 @@ test = do
       it "resets state without any action" $ do
         ((nextState, action), _) <- runWithMocks $ update flush currentState ResetKeys
         action `shouldBe` Nothing
-        nextState `shouldBe` currentState {stateKeySequence = [], stateIsMatched = False, stateRepetition = 1}
+        nextState
+          `shouldBe` currentState
+            { stateMode = ModeHints $ defaultHintModeData {stateKeySequence = [], stateIsMatched = False},
+              stateRepetition = 1
+            }
 
     context "with action SetMode" $ do
       let currentState = defaultState
@@ -241,12 +249,37 @@ test = do
 
     context "with action InitializeMode" $ do
       context "when mode is ModeHints" $ do
-        let currentState = defaultState {stateMode = ModeHints def, stateIsModeInitialized = False}
+        let rows = 13
+        let cols = 11
+        let currentState =
+              defaultState
+                { stateGridRows = rows,
+                  stateGridCols = cols,
+                  stateMode = ModeHints defaultHintModeData,
+                  stateIsModeInitialized = False
+                }
 
         it "updates initialization state to true" $ do
           ((nextState, action), _) <- runWithMocks $ update flush currentState InitializeMode
-          nextState `shouldBe` currentState {stateIsModeInitialized = True}
+          stateIsModeInitialized nextState `shouldBe` True
           action `shouldBe` Nothing
+
+        it "returns grid with 16x9 key sequences" $ do
+          ((nextState, _), _) <- runWithMocks $ update flush currentState InitializeMode
+          case stateMode nextState of
+            ModeHints hintsData -> do
+              length (stateGrid hintsData) `shouldBe` rows
+              stateGrid hintsData `shouldSatisfy` all ((== cols) . length)
+              stateGrid hintsData `shouldSatisfy` all (all ((== 2) . length))
+            _ -> undefined
+
+        it "returns grid with all unique key sequences" $ do
+          ((nextState, _), _) <- runWithMocks $ update flush currentState InitializeMode
+          case stateMode nextState of
+            ModeHints hintsData -> do
+              join (stateGrid hintsData) `shouldSatisfy` (not . null)
+              join (stateGrid hintsData) `shouldBe` uniq (join $ stateGrid hintsData)
+            _ -> undefined
 
       context "when mode is ModeSearch" $ do
         let currentState = defaultState {stateMode = ModeSearch def, stateIsModeInitialized = False}

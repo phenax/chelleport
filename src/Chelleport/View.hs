@@ -11,7 +11,7 @@ import Foreign.C (CInt)
 
 render :: (MonadDraw m) => State -> m ()
 render state = case stateMode state of
-  ModeHints _ -> renderHintsView state
+  ModeHints modeHintsData -> renderHintsView state modeHintsData
   ModeSearch modeSearchData -> renderSearchView state modeSearchData
 
 getSearchText :: State -> ModeSearchData -> String
@@ -35,19 +35,19 @@ renderSearchView state searchData@(ModeSearchData {searchFilteredWords, searchHi
   (w, h) <- windowSize
   void $ drawText (w `div` 2, h `div` 2) colorWhite FontSM (Text.pack $ getSearchText state searchData)
 
-renderHintsView :: (MonadDraw m) => State -> m ()
-renderHintsView state = do
+renderHintsView :: (MonadDraw m) => State -> ModeHintsData -> m ()
+renderHintsView state (ModeHintsData {stateGrid, stateKeySequence, stateIsMatched}) = do
   renderGridLines state
 
   (wcell, hcell) <- cellSize state
 
-  forM_ (zip [0 ..] $ stateGrid state) $ \(rowIndex, row) -> forM_ (zip [0 ..] row) $ \(colIndex, cell) -> do
+  forM_ (zip [0 ..] stateGrid) $ \(rowIndex, row) -> forM_ (zip [0 ..] row) $ \(colIndex, cell) -> do
     let py = rowIndex * hcell + 10
     let px = colIndex * wcell + wcell `div` 2 - 20
-    visible <- renderKeySequence (stateKeySequence state) cell (px, py)
+    visible <- renderKeySequence stateKeySequence cell (px, py)
     when visible $ do
       renderTargetMarker state (rowIndex, colIndex)
-      when (stateIsMatched state) $ do
+      when stateIsMatched $ do
         renderGranularGrid state (rowIndex, colIndex)
 
 renderKeySequence :: (MonadDraw m) => KeySequence -> Cell -> (CInt, CInt) -> m Bool
@@ -75,11 +75,10 @@ renderKeySequence keySequence cell (px, py) = do
 
 renderGridLines :: (MonadDraw m) => State -> m ()
 renderGridLines state = do
-  let grid = stateGrid state
   (wcell, hcell) <- cellSize state
+  let rows = intToCInt $ stateGridRows state
+  let columns = intToCInt $ stateGridCols state
 
-  let rows = intToCInt $ length grid
-  let columns = intToCInt $ length $ head grid
   forM_ [0 .. rows] $ \rowIndex -> do
     setDrawColor colorFocusLines
     drawHorizontalLine (rowIndex * hcell + hcell `div` 2)

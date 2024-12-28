@@ -9,11 +9,11 @@ import TestUtils
 
 test :: SpecWith ()
 test = do
-  let defaultState = def {stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]]}
+  let defaultState = def {stateGridRows = 2, stateGridCols = 2, stateMode = ModeHints def {stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]]}}
 
   describe "#render" $ do
     context "when key sequence is empty" $ do
-      let currentState = defaultState {stateKeySequence = ""}
+      let currentState = defaultState {stateMode = ModeHints (modeHintsData $ stateMode defaultState) {stateKeySequence = ""}}
 
       it "draws matching text labels" $ do
         (_, mock) <- runWithMocks $ do
@@ -25,7 +25,7 @@ test = do
         mock `shouldHaveCalled` Mock_drawText (1420, 550) colorWhite FontLG "JKL"
 
     context "when there is a partial match" $ do
-      let currentState = defaultState {stateKeySequence = "D"}
+      let currentState = defaultState {stateMode = ModeHints (modeHintsData $ stateMode defaultState) {stateKeySequence = "D"}}
 
       it "draws matching text labels" $ do
         (_, mock) <- runWithMocks $ do
@@ -39,7 +39,7 @@ test = do
         mock `shouldHaveCalled` Mock_drawText (470, 550) colorAccent FontLG "JK"
 
     context "when key sequence is complete match" $ do
-      let currentState = defaultState {stateKeySequence = "DEF"}
+      let currentState = defaultState {stateMode = ModeHints (modeHintsData $ stateMode defaultState) {stateKeySequence = "DEF"}}
 
       it "draws only the matching label" $ do
         (_, mock) <- runWithMocks $ do

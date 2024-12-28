@@ -78,10 +78,10 @@ fillRectVertices :: (MonadDraw m) => (CInt, CInt) -> (CInt, CInt) -> m ()
 fillRectVertices (x1, y1) (x2, y2) = fillRect (x1, y1) (x2 - x1, y2 - y1)
 
 cellSize :: (MonadDraw m) => State -> m (CInt, CInt)
-cellSize (State {stateGrid}) = do
+cellSize (State {stateGridRows, stateGridCols}) = do
   (width, height) <- windowSize
-  let wcell = width `div` intToCInt (length $ head stateGrid)
-  let hcell = height `div` intToCInt (length stateGrid)
+  let wcell = width `div` intToCInt stateGridCols
+  let hcell = height `div` intToCInt stateGridRows
   pure (wcell, hcell)
 
 pointerPositionIncrement :: (MonadDraw m) => State -> m (CInt, CInt)

@@ -36,10 +36,19 @@ instance Default ModeSearchData where
       }
 
 data ModeHintsData = ModeHintsData
+  { stateGrid :: KeyGrid,
+    stateKeySequence :: KeySequence,
+    stateIsMatched :: Bool
+  }
   deriving (Show, Eq)
 
 instance Default ModeHintsData where
-  def = ModeHintsData
+  def =
+    ModeHintsData
+      { stateGrid = [],
+        stateKeySequence = "",
+        stateIsMatched = False
+      }
 
 data Mode
   = ModeHints {modeHintsData :: ModeHintsData}
@@ -47,9 +56,8 @@ data Mode
   deriving (Show, Eq)
 
 data State = State
-  { stateGrid :: KeyGrid,
-    stateKeySequence :: KeySequence,
-    stateIsMatched :: Bool,
+  { stateGridRows :: Int,
+    stateGridCols :: Int,
     stateIsShiftPressed :: Bool,
     stateIsDragging :: Bool,
     stateRepetition :: Int,
@@ -61,9 +69,8 @@ data State = State
 instance Default State where
   def =
     State
-      { stateGrid = [],
-        stateKeySequence = "",
-        stateIsMatched = False,
+      { stateGridRows = 0,
+        stateGridCols = 0,
         stateIsShiftPressed = False,
         stateIsDragging = False,
         stateRepetition = 1,

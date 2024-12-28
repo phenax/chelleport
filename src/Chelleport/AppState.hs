@@ -15,13 +15,11 @@ import qualified Text.Fuzzy as Fuzzy
 
 initialState :: (Monad m) => Configuration -> m (State, Maybe AppAction)
 initialState config = do
-  let cells = either error id $ generateGrid 0 (rows, columns) hintKeys
   let action = Just $ SetMode $ configMode config
-  pure (def {stateGrid = cells}, action)
+  pure (def {stateGridRows = rows, stateGridCols = columns}, action)
   where
     rows = 9
     columns = 16
-    hintKeys = ['A' .. 'Z']
 
 update :: (MonadAppShell m, MonadDraw m, MonadControl m, MonadOCR m) => Update m State AppAction
 -- Chain clicks
@@ -32,20 +30,20 @@ update _ state (ChainMouseClick btn) = do
   pure (state {stateRepetition = 1}, Just ResetKeys)
 
 -- HINTS MODE: Act on key inputs
-update _ state@(State {stateMode = ModeHints {}}) (HandleKeyInput keycode) = do
+update _ state@(State {stateMode = ModeHints hintsData}) (HandleKeyInput keycode) = do
   case (toKeyChar keycode, validNextKeys) of
     (Just keyChar, Just validChars')
-      | stateIsMatched state && keyChar `elem` ("HJKL" :: String) -> do
+      | stateIsMatched hintsData && keyChar `elem` ("HJKL" :: String) -> do
           pure (state, Just $ MoveMouseInDirection $ hjklDirection keyChar)
       | keyChar `elem` validChars' -> do
-          let newKeySequence = stateKeySequence state ++ [keyChar]
-          let matchPosition = findMatchPosition newKeySequence $ stateGrid state
-          let state' = state {stateKeySequence = newKeySequence, stateIsMatched = isJust matchPosition}
+          let newKeySequence = stateKeySequence hintsData ++ [keyChar]
+          let matchPosition = findMatchPosition newKeySequence $ stateGrid hintsData
+          let updatedHintsData = hintsData {stateKeySequence = newKeySequence, stateIsMatched = isJust matchPosition}
           action <- traverse (fmap MoveMousePosition . screenPositionFromCellPosition state) matchPosition
-          pure (state', action)
+          pure (state {stateMode = ModeHints updatedHintsData}, action)
     _ -> pure (state, Nothing)
   where
-    validNextKeys = nextChars (stateKeySequence state) (stateGrid state)
+    validNextKeys = nextChars (stateKeySequence hintsData) (stateGrid hintsData)
 
 -- SEARCH MODE: Act on key inputs
 update _ state@(State {stateMode = ModeSearch (ModeSearchData {searchWords, searchInputText})}) (HandleKeyInput keycode) = do
@@ -125,25 +123,25 @@ update _ state (MoveMousePosition (x, y)) = do
 
 -- Reset entered key sequence and state
 update _ state ResetKeys = do
-  pure
-    ( state
-        { stateKeySequence = [],
-          stateIsMatched = False,
-          stateRepetition = 1,
-          stateMode = resetMode (stateMode state)
-        },
-      Nothing
-    )
+  let nextState =
+        state
+          { stateRepetition = 1,
+            stateMode = resetMode (stateMode state)
+          }
+  pure (nextState, Nothing)
   where
-    resetMode mode@(ModeHints {}) = mode
+    resetMode (ModeHints hintsData) = ModeHints $ hintsData {stateKeySequence = [], stateIsMatched = False}
     resetMode (ModeSearch searchData@(ModeSearchData {searchWords})) =
-      ModeSearch (searchData {searchWords = searchWords, searchFilteredWords = searchWords})
+      ModeSearch $ searchData {searchWords = searchWords, searchFilteredWords = searchWords}
 
 -- Initialize current mode
 update flush state InitializeMode =
   case stateMode state of
-    ModeHints {} -> pure (state {stateIsModeInitialized = True}, Nothing)
-    ModeSearch {} -> do
+    ModeHints hintsData -> do
+      let cells = either error id $ generateGrid 0 (stateGridRows state, stateGridCols state) ['A' .. 'Z']
+      let updateHintsData = hintsData {stateGrid = cells}
+      pure (state {stateMode = ModeHints updateHintsData, stateIsModeInitialized = True}, Nothing)
+    ModeSearch searchData -> do
       position <- windowPosition
       size <- windowSize
       hideWindow
@@ -151,7 +149,7 @@ update flush state InitializeMode =
       showWindow
       flush
       matches <- getWordsInImage screenshot
-      let updatedSearchData = (modeSearchData $ stateMode state) {searchWords = matches, searchFilteredWords = matches}
+      let updatedSearchData = searchData {searchWords = matches, searchFilteredWords = matches}
       pure (state {stateMode = ModeSearch updatedSearchData, stateIsModeInitialized = True}, Nothing)
 
 -- Set mode
