@@ -1,6 +1,4 @@
 * Current
-  - ( ) Investigate memory leak with c++ ffi when re-evaluating ocr
-  - ( ) TextStyle for drawText
   - ( ) Middle click
   - (-) Optimize speed of ocr
   - ( ) Backspace deletes a single character in search mode

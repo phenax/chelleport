@@ -12,7 +12,7 @@ import qualified SDL.Font as TTF
 
 class (Monad m) => MonadDraw m where
   drawLine :: (CInt, CInt) -> (CInt, CInt) -> m ()
-  drawText :: (CInt, CInt) -> Color -> FontSize -> Text -> m (CInt, CInt)
+  drawText :: (CInt, CInt) -> TextStyle -> Text -> m (CInt, CInt)
   drawCircle :: Int -> (CInt, CInt) -> m ()
   fillRect :: (CInt, CInt) -> (CInt, CInt) -> m ()
   setDrawColor :: Color -> m ()
@@ -33,12 +33,12 @@ instance (MonadIO m) => MonadDraw (AppM m) where
     let rect = SDL.Rectangle (SDL.P $ SDL.V2 x y) (SDL.V2 w h)
     SDL.fillRect renderer (Just rect)
 
-  drawText (x, y) color size text = do
+  drawText (x, y) (TextStyle {textColor, textSize}) text = do
     DrawContext {ctxRenderer = renderer, ctxFontSmall, ctxFontLarge} <- ask
-    let font = case size of
+    let font = case textSize of
           FontSM -> ctxFontSmall
           FontLG -> ctxFontLarge
-    surface <- TTF.blended font color text
+    surface <- TTF.blended font textColor text
     texture <- SDL.createTextureFromSurface renderer surface
     SDL.freeSurface surface
 

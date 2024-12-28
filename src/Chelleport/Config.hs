@@ -4,6 +4,12 @@ import Chelleport.Types
 import Foreign.C (CFloat)
 import qualified SDL
 
+searchingTextStyle :: TextStyle
+searchingTextStyle = TextStyle {textColor = colorWhite, textSize = FontSM}
+
+hintLabelTextStyle :: TextStyle
+hintLabelTextStyle = TextStyle {textColor = colorWhite, textSize = FontLG}
+
 colorWhite :: Color
 colorWhite = SDL.V4 255 255 255 255
 

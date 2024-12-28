@@ -33,7 +33,8 @@ renderSearchView state searchData@(ModeSearchData {searchFilteredWords, searchHi
     fillRectVertices (matchStartX, matchStartY) (matchEndX, matchEndY)
 
   (w, h) <- windowSize
-  void $ drawText (w `div` 2, h `div` 2) colorWhite FontSM (Text.pack $ getSearchText state searchData)
+  let textStyle = TextStyle {textColor = colorWhite, textSize = FontSM}
+  void $ drawText (w `div` 2, h `div` 2) textStyle (Text.pack $ getSearchText state searchData)
 
 renderHintsView :: (MonadDraw m) => State -> ModeHintsData -> m ()
 renderHintsView state (ModeHintsData {stateGrid, stateKeySequence, stateIsMatched}) = do
@@ -63,12 +64,12 @@ renderKeySequence keySequence cell (px, py) = do
 
   previousTextWidth <-
     if isNotEmpty matched
-      then fst <$> drawText (px, py) colorLightGray FontLG (Text.pack matched)
+      then fst <$> drawText (px, py) (hintLabelTextStyle {textColor = colorLightGray}) (Text.pack matched)
       else pure 0
 
   when (isNotEmpty remaining) $ case textColor of
     Just color -> do
-      void $ drawText (px + previousTextWidth, py) color FontLG $ Text.pack remaining
+      void $ drawText (px + previousTextWidth, py) (hintLabelTextStyle {textColor = color}) $ Text.pack remaining
     Nothing -> pure ()
 
   pure isVisible
