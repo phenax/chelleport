@@ -10,7 +10,7 @@
 #include "../include/recognizer.h"
 
 extern "C" OCRMatch *findWordCoordinates(const char *image_path, int *size) {
-  std::vector<OCRMatch> matches;
+  OCRMatchSet matches;
   MEASURE("OCR", { matches = extractTextMatches(image_path); });
 
   std::cout << "Match count: " << matches.size() << std::endl;
@@ -22,12 +22,11 @@ extern "C" OCRMatch *findWordCoordinates(const char *image_path, int *size) {
   return ptr;
 }
 
-std::vector<OCRMatch> extractTextMatches(const char *imagePath) {
-  std::vector<OCRMatch> results;
-
+OCRMatchSet extractTextMatches(const char *imagePath) {
   Pix *image = image::loadImage(imagePath);
-  if (image == nullptr)
-    return results;
+  if (image == nullptr) {
+    return OCRMatchSet();
+  }
 
   // printf("imagePath: %s\n", imagePath);
   // pixWrite(imagePath, image, IFF_JFIF_JPEG);
@@ -51,10 +50,10 @@ std::vector<OCRMatch> extractTextMatches(const char *imagePath) {
   return runRecognizers(recognizers, image);
 }
 
-std::vector<OCRMatch>
+OCRMatchSet
 runRecognizers(std::vector<std::unique_ptr<Recognizer>> &recognizers,
                Pix *image) {
-  std::vector<OCRMatch> results;
+  OCRMatchSet results;
   std::shared_ptr<Pix> sharedImage(image, [](Pix *p) { pixDestroy(&p); });
 
   std::vector<std::thread> workers;
@@ -72,7 +71,7 @@ runRecognizers(std::vector<std::unique_ptr<Recognizer>> &recognizers,
 
   for (auto &ext : recognizers) {
     for (auto &match : ext->getResults())
-      results.push_back(match);
+      results.insert(match);
   }
 
   return results;

@@ -19,8 +19,18 @@
 extern "C" OCRMatch *findWordCoordinates(const char *image_path,
                                          /* returns */ int *size);
 
-std::vector<OCRMatch> extractTextMatches(const char *imagePath);
+struct ScreenPositionComparator {
+  bool operator()(const OCRMatch &a, const OCRMatch &b) const {
+    if (abs(a.startY - b.startY) < 5)
+      return a.startX < b.startX;
+    return a.startY < b.startY;
+  }
+};
 
-std::vector<OCRMatch>
+typedef std::set<OCRMatch, ScreenPositionComparator> OCRMatchSet;
+
+OCRMatchSet extractTextMatches(const char *imagePath);
+
+OCRMatchSet
 runRecognizers(std::vector<std::unique_ptr<Recognizer>> &recognizers,
                Pix *image);
