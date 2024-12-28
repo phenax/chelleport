@@ -47,6 +47,7 @@
             just
             nodemon
             clang-tools
+            valgrind
           ];
         in {
           haskellProjects.default = {

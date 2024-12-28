@@ -5,7 +5,7 @@ import Control.Concurrent (threadDelay)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.RWS (MonadReader (ask))
 import qualified Data.ByteString as BS
-import Foreign (Bits (shiftR), Ptr, Storable (peek, pokeByteOff), alloca, allocaBytes, peekArray, (.&.))
+import Foreign (Bits (shiftR), Ptr, Storable (peek, pokeByteOff), alloca, allocaBytes, free, peekArray, (.&.))
 import Foreign.C (CInt, CString, newCString)
 import GHC.IO.Handle.FD (withFile)
 import GHC.IO.IOMode (IOMode (WriteMode))
@@ -31,7 +31,6 @@ instance (MonadIO m) => MonadOCR (AppM m) where
       pure path
 
   getWordsInImage filePath = liftIO $ do
-    -- result `seq` pure result -- Strict eval
     findWordCoordinates filePath <* removeFile filePath
 
 findWordCoordinates :: String -> IO [OCRMatch]
@@ -40,7 +39,9 @@ findWordCoordinates imgPath = alloca $ \sizePtr -> do
   arrayPtr <- c_getAllWordCoordinates imgPathC sizePtr
 
   size <- peek sizePtr
-  peekArray (fromIntegral size) arrayPtr
+  result <- peekArray (fromIntegral size) arrayPtr
+  free arrayPtr
+  pure result
 
 createTemporaryScreenshot :: DrawContext -> (CInt, CInt) -> (CInt, CInt) -> IO String
 createTemporaryScreenshot ctx offset size = do

@@ -1,11 +1,11 @@
 * Current
+  - ( ) Investigate memory leak with c++ ffi when re-evaluating ocr
   - ( ) TextStyle for drawText
   - ( ) Middle click
   - (-) Optimize speed of ocr
   - ( ) Backspace deletes a single character in search mode
 
 * Later
-  - ( ) Separate state for hint modes into ModeHint constructor
   - ( ) Look into making mouse controls (click/mouse down/mouse up) cross-platform
   - ( ) Look into making screenshot cross-platform
   - ( ) Lens-ey setup for Mode access
