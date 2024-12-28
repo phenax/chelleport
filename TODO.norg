@@ -1,5 +1,4 @@
 * Current
-  - ( ) Sort ocr match result by position on screen (top to bottom, left to right)
   - ( ) TextStyle for drawText
   - ( ) Middle click
   - ( ) Separate state for hint modes into ModeHint constructor

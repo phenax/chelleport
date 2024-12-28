@@ -77,7 +77,7 @@ update _ state (IncrementHighlightIndex n) = do
       action <- traverse (fmap MoveMousePosition . wordPosition) highlightedWord
       pure (state {stateRepetition = 1, stateMode = mode {searchHighlightedIndex = highlightedIndexClamped}}, action)
       where
-        highlightedWord = searchFilteredWords mode `itemAt` highlightedIndex
+        highlightedWord = searchFilteredWords mode `itemAt` highlightedIndexClamped
         highlightedIndex = searchHighlightedIndex mode + n
         highlightedIndexClamped =
           if highlightedIndex < 0
