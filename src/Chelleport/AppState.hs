@@ -132,7 +132,7 @@ update _ state ResetKeys = do
   where
     resetMode (ModeHints hintsData) = ModeHints $ hintsData {stateKeySequence = [], stateIsMatched = False}
     resetMode (ModeSearch searchData@(ModeSearchData {searchWords})) =
-      ModeSearch $ searchData {searchWords = searchWords, searchFilteredWords = searchWords}
+      ModeSearch $ searchData {searchWords = searchWords, searchFilteredWords = searchWords, searchInputText = ""}
 
 -- Initialize current mode
 update flush state InitializeMode =
@@ -149,7 +149,7 @@ update flush state InitializeMode =
       showWindow
       flush
       matches <- getWordsInImage screenshot
-      let updatedSearchData = searchData {searchWords = matches, searchFilteredWords = matches}
+      let updatedSearchData = searchData {searchWords = matches, searchFilteredWords = matches, searchInputText = ""}
       pure (state {stateMode = ModeSearch updatedSearchData, stateIsModeInitialized = True}, Nothing)
 
 -- Set mode

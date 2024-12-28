@@ -32,6 +32,9 @@ eventHandler state event =
       -- Esc: Quit
       | checkKey [key SDL.KeycodeEscape, pressed] ev ->
           Just ShutdownApp
+      -- <C-r>: Refresh current mode
+      | checkKey [ctrl, key SDL.KeycodeR, pressed] ev ->
+          Just $ SetMode $ stateMode state
       -- <C-s>: Enable search mode
       | checkKey [ctrl, key SDL.KeycodeS, pressed] ev ->
           Just $ SetMode $ ModeSearch def

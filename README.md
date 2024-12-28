@@ -60,6 +60,7 @@ Use [sxhkd](https://github.com/baskerville/sxhkd), [shotkey](https://github.com/
 - Type the characters in one of the words to move the cursor to it
 - Press `ctrl+n` & `ctrl+p` to go to next/previous match respectively
 - NOTE: The startup is a little slow currently taking ~1 second to run ocr. Will keep optimizing to get this down.
+- Press `ctrl+r` to reload the OCR results if contents on the page changed
 
 
 ## Feedback and Support

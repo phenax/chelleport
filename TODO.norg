@@ -6,11 +6,10 @@
 * Later
   - ( ) Look into making mouse controls (click/mouse down/mouse up) cross-platform
   - ( ) Look into making screenshot cross-platform
-  - ( ) Lens-ey setup for Mode access
   - ( ) Support 4k screen resolution?
 
 * Maybe
-  - ( ) Scroll
   - ( ) Rethink keybindings
   - ( ) Custom configuration?
+  - ( ) Scroll
   - ( ) Process mode? Run in bg with root key binding to toggle
