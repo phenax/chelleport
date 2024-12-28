@@ -1,9 +1,11 @@
 module Specs.AppStateSpec where
 
 import Chelleport.AppState (initialState, update)
+import Chelleport.Args (Configuration (configMode))
 import Chelleport.Types
 import Chelleport.Utils (uniq)
 import Control.Monad (join)
+import Data.Default (Default (def))
 import qualified SDL
 import Test.Hspec
 import TestUtils
@@ -11,21 +13,30 @@ import TestUtils
 test :: SpecWith ()
 test = do
   describe "#initialState" $ do
+    let config = def
+
     it "returns the initial state of the app" $ do
-      ((initState, _), _) <- runWithMocks initialState
+      ((initState, _), _) <- runWithMocks $ initialState config
       stateKeySequence initState `shouldBe` []
       stateIsMatched initState `shouldBe` False
       stateIsShiftPressed initState `shouldBe` False
 
     it "returns grid with 16x9 key sequences" $ do
-      ((initState, _), _) <- runWithMocks initialState
+      ((initState, _), _) <- runWithMocks $ initialState config
       length (stateGrid initState) `shouldBe` 9
       stateGrid initState `shouldSatisfy` all ((== 16) . length)
       stateGrid initState `shouldSatisfy` all (all ((== 2) . length))
 
     it "returns grid with all unique key sequences" $ do
-      ((initState, _), _) <- runWithMocks initialState
+      ((initState, _), _) <- runWithMocks $ initialState config
       join (stateGrid initState) `shouldBe` uniq (join $ stateGrid initState)
+
+    context "when config specifies mode" $ do
+      let currentConfig = config {configMode = defaultSearchMode}
+
+      it "continues to set given mode" $ do
+        ((_, action), _) <- runWithMocks $ initialState currentConfig
+        action `shouldBe` Just (SetMode defaultSearchMode)
 
   describe "#update" $ do
     let defaultState = defaultAppState {stateGrid = [["ABC", "DEF"], ["DJK", "JKL"]]}

@@ -1,6 +1,7 @@
 module Chelleport.Types where
 
 import Control.Monad.Reader (MonadIO, MonadReader, ReaderT)
+import Data.Default (Default (def))
 import Data.Vector.Storable (Storable)
 import Data.Word (Word8)
 import Foreign (Ptr, Storable (alignment, peek, poke, sizeOf), castPtr, nullPtr, plusPtr)
@@ -126,3 +127,12 @@ instance Storable OCRMatch where
 
   -- NOTE: Dont need poke
   poke _ _ = undefined
+
+data Configuration = Configuration
+  { configMode :: Mode,
+    configShowHelp :: Bool
+  }
+  deriving (Show, Eq)
+
+instance Default Configuration where
+  def = Configuration {configMode = defaultHintsMode, configShowHelp = False}

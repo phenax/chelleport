@@ -1,6 +1,7 @@
 module Chelleport.AppState (initialState, update) where
 
 import Chelleport.AppShell (MonadAppShell (hideWindow, showWindow, shutdownApp))
+import Chelleport.Args (Configuration (configMode))
 import Chelleport.Control (MonadControl (..), directionalIncrement, hjklDirection)
 import Chelleport.Draw (MonadDraw (windowPosition, windowSize), pointerPositionIncrement, screenPositionFromCellPosition, wordPosition)
 import Chelleport.KeySequence (findMatchPosition, generateGrid, nextChars, toKeyChar)
@@ -12,10 +13,11 @@ import Data.Char (toLower)
 import Data.Maybe (isJust)
 import qualified Text.Fuzzy as Fuzzy
 
-initialState :: (Monad m) => m (State, Maybe AppAction)
-initialState = do
+initialState :: (Monad m) => Configuration -> m (State, Maybe AppAction)
+initialState config = do
   let cells = either error id $ generateGrid 0 (rows, columns) hintKeys
-  pure (defaultAppState {stateGrid = cells}, Just $ SetMode defaultHintsMode)
+  let action = Just $ SetMode $ configMode config
+  pure (defaultAppState {stateGrid = cells}, action)
   where
     rows = 9
     columns = 16

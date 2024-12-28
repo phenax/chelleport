@@ -2,6 +2,7 @@ module Chelleport where
 
 import Chelleport.AppShell (setupAppShell)
 import qualified Chelleport.AppState as AppState
+import Chelleport.Args (Configuration)
 import Chelleport.Context (initializeContext)
 import Chelleport.Control (anyAlphabetic, anyDigit, checkKey, ctrl, eventToKeycode, hjkl, hjklDirection, key, pressed, released, shift)
 import Chelleport.KeySequence (keycodeToInt, toKeyChar)
@@ -13,12 +14,12 @@ import Control.Monad.Reader (ReaderT (runReaderT))
 import Data.Maybe (fromMaybe)
 import qualified SDL
 
-run :: IO ()
-run = do
+run :: Configuration -> IO ()
+run config = do
   ctx <- initializeContext
   -- Cosplaying as elm
   runAppWithCtx ctx $
-    setupAppShell ctx AppState.initialState AppState.update eventHandler View.render
+    setupAppShell ctx (AppState.initialState config) AppState.update eventHandler View.render
   where
     runAppWithCtx :: (MonadIO m) => DrawContext -> AppM m x -> m x
     runAppWithCtx ctx = (`runReaderT` ctx) . runAppM

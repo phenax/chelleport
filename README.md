@@ -46,6 +46,10 @@ https://github.com/user-attachments/assets/93ddc1ff-6cbe-4be4-9507-d68de880212a
 ## Usage
 Use [sxhkd](https://github.com/baskerville/sxhkd), [shotkey](https://github.com/phenax/shotkey), your window manager or any other key binding manager to set up a keybinding for `chelleport`.
 
+### CLI
+- `chelleport --help` to see help menu
+- `chelleport -m <mode>` to start in given mode. Allowed `search` or `hints`. `hints` by default
+
 ### Hints mode (`ctrl+t` to switch to hints mode)
 - With the grid open, type any of the key sequences shown on the grid to move the pointer there
 - Once a match is found, you can now use `hjkl` keys to make smaller movements. Hold `shift` + `hjkl` to move in bigger increments.
@@ -55,6 +59,7 @@ Use [sxhkd](https://github.com/baskerville/sxhkd), [shotkey](https://github.com/
 - Words that are recognized by OCR will be highlighted
 - Type the characters in one of the words to move the cursor to it
 - Press `ctrl+n` & `ctrl+p` to go to next/previous match respectively
+- NOTE: The startup is a little slow currently taking ~1 second to run ocr. Will keep optimizing to get this down.
 
 
 ## Feedback and Support
