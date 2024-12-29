@@ -33,7 +33,7 @@ renderSearchView state searchData@(ModeSearchData {searchFilteredWords, searchHi
     fillRectVertices (matchStartX, matchStartY) (matchEndX, matchEndY)
 
   (w, h) <- windowSize
-  void $ drawText (w `div` 2, h `div` 2) searchingTextStyle (Text.pack $ getSearchText state searchData)
+  void $ drawText (w `div` 2, 5 + h `div` 2) searchingTextStyle (Text.pack $ getSearchText state searchData)
 
 renderHintsView :: (MonadDraw m) => State -> ModeHintsData -> m ()
 renderHintsView state (ModeHintsData {stateGrid, stateKeySequence, stateIsMatched}) = do
@@ -42,8 +42,8 @@ renderHintsView state (ModeHintsData {stateGrid, stateKeySequence, stateIsMatche
   (wcell, hcell) <- cellSize state
 
   forM_ (zip [0 ..] stateGrid) $ \(rowIndex, row) -> forM_ (zip [0 ..] row) $ \(colIndex, cell) -> do
-    let py = rowIndex * hcell + 10
-    let px = colIndex * wcell + wcell `div` 2 - 20
+    let py = rowIndex * hcell + 20
+    let px = colIndex * wcell + wcell `div` 2 - 16
     visible <- renderKeySequence stateKeySequence cell (px, py)
     when visible $ do
       renderTargetMarker state (rowIndex, colIndex)
