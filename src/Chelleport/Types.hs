@@ -83,6 +83,8 @@ data Direction = DirUp | DirDown | DirLeft | DirRight
 
 data AppAction
   = ChainMouseClick MouseButtonType
+  | DeleteLastInput
+  | HandleFilterInputChange
   | HandleKeyInput SDL.Keycode
   | IncrementHighlightIndex Int
   | IncrementMouseCursor (Int, Int)
@@ -143,6 +145,9 @@ instance Storable OCRMatch where
 
   -- NOTE: Dont need poke
   poke _ _ = undefined
+
+instance Default OCRMatch where
+  def = OCRMatch {matchStartX = 0, matchStartY = 0, matchEndX = 0, matchEndY = 0, matchText = ""}
 
 data Configuration = Configuration
   { configMode :: Mode,

@@ -1,9 +1,8 @@
 * Current
-  - ( ) Middle click
   - (-) Optimize speed of ocr
-  - ( ) Backspace deletes a single character in search mode
 
 * Later
+  - ( ) Middle click
   - ( ) Look into making mouse controls (click/mouse down/mouse up) cross-platform
   - ( ) Look into making screenshot cross-platform
   - ( ) Support 4k screen resolution?

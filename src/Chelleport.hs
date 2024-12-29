@@ -17,13 +17,14 @@ import qualified SDL
 run :: Configuration -> IO ()
 run config = do
   ctx <- initializeContext
-  -- Cosplaying as elm
+  -- Cosplaying as elm's state machine
   runAppWithCtx ctx $
     setupAppShell ctx (AppState.initialState config) AppState.update eventHandler View.render
   where
     runAppWithCtx :: (MonadIO m) => DrawContext -> AppM m x -> m x
     runAppWithCtx ctx = (`runReaderT` ctx) . runAppM
 
+-- TODO: Make event handling independent of state
 eventHandler :: State -> SDL.Event -> Maybe AppAction
 eventHandler state event =
   case SDL.eventPayload event of
@@ -43,9 +44,9 @@ eventHandler state event =
           Just $ SetMode $ ModeHints def
       -- <C-n>, <C-p>: Search increment next/prev
       | checkKey [ctrl, key SDL.KeycodeN, pressed] ev ->
-          Just $ IncrementHighlightIndex (stateRepetition state)
+          Just $ IncrementHighlightIndex 1
       | checkKey [ctrl, key SDL.KeycodeP, pressed] ev ->
-          Just $ IncrementHighlightIndex (-1 * stateRepetition state)
+          Just $ IncrementHighlightIndex (-1)
       -- <C-hjkl>: Movement
       | checkKey [ctrl, hjkl, pressed] ev ->
           MoveMouseInDirection . hjklDirection <$> toKeyChar (eventToKeycode ev)
@@ -56,7 +57,9 @@ eventHandler state event =
             else Just $ TriggerMouseClick LeftClick
       -- Backspace: Reset keys
       | checkKey [key SDL.KeycodeBackspace, pressed] ev ->
-          Just ResetKeys
+          case stateMode state of
+            ModeHints {} -> Just ResetKeys
+            ModeSearch {} -> Just DeleteLastInput
       -- <C-v>: Toggle mouse dragging
       | checkKey [ctrl, key SDL.KeycodeV, pressed] ev ->
           Just MouseDragToggle

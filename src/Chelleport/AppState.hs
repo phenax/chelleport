@@ -6,7 +6,7 @@ import Chelleport.Draw (MonadDraw (windowPosition, windowSize), pointerPositionI
 import Chelleport.KeySequence (findMatchPosition, generateGrid, nextChars, toKeyChar)
 import Chelleport.OCR (MonadOCR (captureScreenshot), getWordsInImage)
 import Chelleport.Types
-import Chelleport.Utils (cIntToInt, clamp, intToCInt, isEmpty, itemAt)
+import Chelleport.Utils (cIntToInt, clamp, cycleInRange, intToCInt, isEmpty, itemAt)
 import Control.Monad (replicateM_)
 import Data.Char (toLower)
 import Data.Default (Default (def))
@@ -29,6 +29,44 @@ update _ state (ChainMouseClick btn) = do
   showWindow
   pure (state {stateRepetition = 1}, Just ResetKeys)
 
+-- Delete last input char
+update _ state DeleteLastInput = case stateMode state of
+  ModeHints {} -> pure (state, Nothing)
+  ModeSearch searchData@(ModeSearchData {searchInputText})
+    | isEmpty searchInputText -> pure (state, Nothing)
+    | otherwise -> do
+        let updatedText = take (length searchInputText - 1) searchInputText
+        pure
+          ( state {stateMode = ModeSearch searchData {searchInputText = updatedText}},
+            Just HandleFilterInputChange
+          )
+
+-- HINTS MODE: Set match state when a match is found for the key sequence
+update _ state@(State {stateMode = ModeHints hintsData}) HandleFilterInputChange = do
+  let updatedHintsData = hintsData {stateIsMatched = isJust matchPosition}
+  action <- fmap MoveMousePosition <$> traverse (screenPositionFromCellPosition state) matchPosition
+  pure (state {stateMode = ModeHints updatedHintsData}, action)
+  where
+    (ModeHintsData {stateKeySequence}) = hintsData
+    matchPosition = findMatchPosition stateKeySequence $ stateGrid hintsData
+
+-- SEARCH MODE: Filter results based on text input
+update _ state@(State {stateMode = ModeSearch searchData}) HandleFilterInputChange = do
+  let updatedModeData =
+        searchData
+          { searchFilteredWords = filteredMatches,
+            searchHighlightedIndex = highlightedIndex
+          }
+  action <- fmap MoveMousePosition <$> traverse wordPosition highlightedWord
+  pure (state {stateMode = ModeSearch updatedModeData}, action)
+  where
+    (ModeSearchData {searchInputText, searchWords, searchHighlightedIndex}) = searchData
+    highlightedIndex = clamp (0, length filteredMatches - 1) searchHighlightedIndex
+    highlightedWord = filteredMatches `itemAt` highlightedIndex
+    filteredMatches
+      | isEmpty searchInputText = searchWords
+      | otherwise = Fuzzy.original <$> Fuzzy.filter searchInputText searchWords "" "" matchText False
+
 -- HINTS MODE: Act on key inputs
 update _ state@(State {stateMode = ModeHints hintsData}) (HandleKeyInput keycode) = do
   case (toKeyChar keycode, validNextKeys) of
@@ -36,53 +74,32 @@ update _ state@(State {stateMode = ModeHints hintsData}) (HandleKeyInput keycode
       | stateIsMatched hintsData && keyChar `elem` ("HJKL" :: String) -> do
           pure (state, Just $ MoveMouseInDirection $ hjklDirection keyChar)
       | keyChar `elem` validChars' -> do
-          let newKeySequence = stateKeySequence hintsData ++ [keyChar]
-          let matchPosition = findMatchPosition newKeySequence $ stateGrid hintsData
-          let updatedHintsData = hintsData {stateKeySequence = newKeySequence, stateIsMatched = isJust matchPosition}
-          action <- traverse (fmap MoveMousePosition . screenPositionFromCellPosition state) matchPosition
-          pure (state {stateMode = ModeHints updatedHintsData}, action)
+          let updatedHintsData = hintsData {stateKeySequence = stateKeySequence hintsData ++ [keyChar]}
+          pure (state {stateMode = ModeHints updatedHintsData}, Just HandleFilterInputChange)
     _ -> pure (state, Nothing)
   where
     validNextKeys = nextChars (stateKeySequence hintsData) (stateGrid hintsData)
 
 -- SEARCH MODE: Act on key inputs
-update _ state@(State {stateMode = ModeSearch (ModeSearchData {searchWords, searchInputText})}) (HandleKeyInput keycode) = do
+update _ state@(State {stateMode = ModeSearch searchData}) (HandleKeyInput keycode) = do
   case toKeyChar keycode of
     Just keyChar -> do
-      let searchText = searchInputText ++ [toLower keyChar]
-      let matches = filterMatches searchText
-      let highlightedIndex = clamp (0, length matches - 1) (searchHighlightedIndex $ modeSearchData mode)
-      let updatedMode =
-            (modeSearchData mode)
-              { searchInputText = searchText,
-                searchFilteredWords = matches,
-                searchHighlightedIndex = highlightedIndex
-              }
-      let highlightedWord = matches `itemAt` highlightedIndex
-      action <- traverse (fmap MoveMousePosition . wordPosition) highlightedWord
-      pure (state {stateMode = ModeSearch updatedMode}, action)
-    _ -> do
-      pure (state, Nothing)
-  where
-    mode = stateMode state
-    filterMatches text
-      | isEmpty text = searchWords
-      | otherwise = Fuzzy.original <$> Fuzzy.filter text searchWords "" "" matchText False
+      let updatedMode = searchData {searchInputText = searchInputText searchData ++ [toLower keyChar]}
+      pure (state {stateMode = ModeSearch updatedMode}, Just HandleFilterInputChange)
+    _ -> pure (state, Nothing)
 
 -- Increment highlighted index for search mode
 update _ state (IncrementHighlightIndex n) = do
   case stateMode state of
-    ModeSearch {} -> do
+    ModeSearch searchData@(ModeSearchData {searchFilteredWords, searchHighlightedIndex}) -> do
+      let updatedModeData = searchData {searchHighlightedIndex = updatedHighlightedIndex}
       action <- traverse (fmap MoveMousePosition . wordPosition) highlightedWord
-      pure (state {stateRepetition = 1, stateMode = ModeSearch $ searchData {searchHighlightedIndex = highlightedIndexClamped}}, action)
+      pure (state {stateRepetition = 1, stateMode = ModeSearch updatedModeData}, action)
       where
-        highlightedWord = searchFilteredWords searchData `itemAt` highlightedIndexClamped
-        highlightedIndex = searchHighlightedIndex searchData + n
-        highlightedIndexClamped =
-          if highlightedIndex < 0
-            then length (searchFilteredWords searchData) - 1
-            else highlightedIndex `mod` length (searchFilteredWords searchData)
-        searchData = modeSearchData $ stateMode state
+        highlightedWord = searchFilteredWords `itemAt` updatedHighlightedIndex
+        increment = n * stateRepetition state
+        updatedHighlightedIndex =
+          cycleInRange (0, length searchFilteredWords - 1) $ searchHighlightedIndex + increment
     _ -> pure (state, Nothing)
 
 -- Move mouse incrementally

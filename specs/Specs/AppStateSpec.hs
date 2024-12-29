@@ -2,7 +2,7 @@ module Specs.AppStateSpec where
 
 import Chelleport.AppState (initialState, update)
 import Chelleport.Types
-import Chelleport.Utils (uniq)
+import Chelleport.Utils (isNotEmpty, uniq)
 import Control.Monad (join)
 import Data.Default (Default (def))
 import qualified SDL
@@ -75,11 +75,122 @@ test = do
                                    Mock_showWindow
                                  ]
 
-    context "with action IncrementHighlightIndex" $ do
-      -- let currentState = defaultState
+    context "with action HandleFilterInputChange" $ do
+      context "when mode is ModeSearch" $ do
+        it "todo: implement" $ do
+          True `shouldBe` True
 
-      it "todo: implement" $ do
-        True `shouldBe` True
+      context "when mode is ModeHints" $ do
+        context "when there are no matches" $ do
+          let currentState = defaultState {stateMode = ModeHints $ defaultHintModeData {stateKeySequence = "DE"}}
+
+          context "when input key sequence has matching values in grid" $ do
+            it "does not update" $ do
+              ((nextState, action), _) <- runWithMocks $ update flush currentState HandleFilterInputChange
+              action `shouldBe` Nothing
+              nextState `shouldBe` currentState
+
+          context "when input key sequence does not have matching values in grid" $ do
+            it "adds key to key sequence" $ do
+              ((nextState, action), _) <- runWithMocks $ update flush currentState HandleFilterInputChange
+              action `shouldBe` Nothing
+              nextState `shouldBe` currentState {stateMode = ModeHints defaultHintModeData {stateIsMatched = False, stateKeySequence = "DE"}}
+
+        context "when there are matches" $ do
+          let currentState = defaultState {stateMode = ModeHints $ defaultHintModeData {stateKeySequence = "DEF"}}
+
+          context "when input key sequence does not have matching values in grid" $ do
+            it "adds key to key sequence and enables isMatched" $ do
+              ((nextState, _), _) <- runWithMocks $ update flush currentState HandleFilterInputChange
+              nextState `shouldBe` currentState {stateMode = ModeHints defaultHintModeData {stateIsMatched = True, stateKeySequence = "DEF"}}
+
+            it "continues with MoveMousePosition action at center of matched cell" $ do
+              ((_, action), _) <- runWithMocks $ do
+                Mock_windowSize `mockReturns` mockWindowSize
+                Mock_windowPosition `mockReturns` mockWindowPosition
+                update flush currentState HandleFilterInputChange
+              action `shouldBe` Just (MoveMousePosition (1640, 370))
+
+    context "with action HandleKeyInput" $ do
+      context "when mode is ModeSearch" $ do
+        let currentState = defaultState {stateMode = ModeSearch $ def {searchInputText = "h"}}
+
+        it "adds key to input text as lower cased and continues with filter action" $ do
+          ((nextState, action), _) <- runWithMocks $ update flush currentState $ HandleKeyInput SDL.KeycodeE
+          nextState `shouldBe` currentState {stateMode = ModeSearch def {searchInputText = "he"}}
+          action `shouldBe` Just HandleFilterInputChange
+
+      context "when mode is ModeHints" $ do
+        let currentState = defaultState {stateMode = ModeHints $ defaultHintModeData {stateKeySequence = "D"}}
+
+        context "when input key sequence has matching values in grid" $ do
+          it "does not update" $ do
+            ((nextState, action), _) <- runWithMocks $ update flush currentState $ HandleKeyInput SDL.KeycodeZ
+            action `shouldBe` Nothing
+            nextState `shouldBe` currentState
+
+        context "when input key sequence does not have matching values in grid" $ do
+          it "adds key to key sequence and continues with filter action" $ do
+            ((nextState, action), _) <- runWithMocks $ update flush currentState $ HandleKeyInput SDL.KeycodeE
+            nextState `shouldBe` currentState {stateMode = ModeHints defaultHintModeData {stateKeySequence = "DE"}}
+            action `shouldBe` Just HandleFilterInputChange
+
+    context "with action IncrementHighlightIndex" $ do
+      context "when filtered match list is empty" $ do
+        let defaultSearchData = def {searchFilteredWords = [], searchHighlightedIndex = 2}
+        let currentState = defaultState {stateRepetition = 1, stateMode = ModeSearch defaultSearchData}
+
+        it "does not continue or update state" $ do
+          ((nextState, action), _) <- runWithMocks $ do
+            update flush currentState $ IncrementHighlightIndex 3
+          nextState `shouldBe` currentState {stateMode = ModeSearch defaultSearchData {searchHighlightedIndex = 0}}
+          action `shouldBe` Nothing
+
+      context "when there are some matches" $ do
+        let defaultSearchData =
+              def
+                { searchHighlightedIndex = 0,
+                  searchFilteredWords =
+                    [ def {matchText = "Hello"},
+                      def {matchStartX = 10, matchText = "World"},
+                      def {matchStartX = 20, matchText = "Door"}
+                    ]
+                }
+        let currentState = defaultState {stateRepetition = 2, stateMode = ModeSearch defaultSearchData}
+
+        it "continues with moving mouse to word at index" $ do
+          ((_, action), _) <- runWithMocks $ update flush currentState $ IncrementHighlightIndex 1
+          action `shouldBe` Just (MoveMousePosition (fromIntegral mockWindowOffsetX + 20, fromIntegral mockWindowOffsetY))
+
+        it "increments index by given number times the repetition count" $ do
+          ((nextState, _), _) <- runWithMocks $ update flush currentState $ IncrementHighlightIndex 1
+          nextState `shouldBe` currentState {stateRepetition = 1, stateMode = ModeSearch defaultSearchData {searchHighlightedIndex = 2}}
+
+        it "resets repetition back to 1" $ do
+          ((nextState, _), _) <- runWithMocks $ update flush currentState $ IncrementHighlightIndex 1
+          stateRepetition nextState `shouldBe` 1
+
+        context "when incrementing higher than the last element" $ do
+          let defaultSearchData =
+                def
+                  { searchHighlightedIndex = 2,
+                    searchFilteredWords =
+                      [ def {matchText = "Hello"},
+                        def {matchStartX = 10, matchText = "World"},
+                        def {matchStartX = 20, matchText = "Door"}
+                      ]
+                  }
+          let currentState = defaultState {stateRepetition = 2, stateMode = ModeSearch defaultSearchData}
+
+          it "circles back to the start of match list" $ do
+            ((nextState, _), _) <- runWithMocks $ do
+              update flush currentState $ IncrementHighlightIndex 1
+            nextState `shouldBe` currentState {stateRepetition = 1, stateMode = ModeSearch defaultSearchData {searchHighlightedIndex = 1}}
+
+          it "continues with moving mouse to word at index" $ do
+            ((_, action), _) <- runWithMocks $ do
+              update flush currentState $ IncrementHighlightIndex 1
+            action `shouldBe` Just (MoveMousePosition (fromIntegral mockWindowOffsetX + 10, fromIntegral mockWindowOffsetY))
 
     context "with action IncrementMouseCursor" $ do
       context "when repetition is 1" $ do
@@ -148,42 +259,6 @@ test = do
         it "continues with action MouseDragStart" $ do
           ((_, action), _) <- runWithMocks $ update flush currentState MouseDragToggle
           action `shouldBe` Just MouseDragStart
-
-    context "with action HandleKeyInput" $ do
-      context "when mode is ModeSearch" $ do
-        it "todo: implement" $ do
-          True `shouldBe` True
-
-      context "when mode is ModeHints" $ do
-        context "when there are no matches" $ do
-          let currentState = defaultState {stateMode = ModeHints $ defaultHintModeData {stateKeySequence = "D"}}
-
-          context "when input key sequence has matching values in grid" $ do
-            it "does not update" $ do
-              ((nextState, action), _) <- runWithMocks $ update flush currentState $ HandleKeyInput SDL.KeycodeZ
-              action `shouldBe` Nothing
-              nextState `shouldBe` currentState
-
-          context "when input key sequence does not have matching values in grid" $ do
-            it "adds key to key sequence" $ do
-              ((nextState, action), _) <- runWithMocks $ update flush currentState $ HandleKeyInput SDL.KeycodeE
-              action `shouldBe` Nothing
-              nextState `shouldBe` currentState {stateMode = ModeHints defaultHintModeData {stateKeySequence = "DE"}}
-
-        context "when there are matches" $ do
-          let currentState = defaultState {stateMode = ModeHints $ defaultHintModeData {stateKeySequence = "DE"}}
-
-          context "when input key sequence does not have matching values in grid" $ do
-            it "adds key to key sequence and enables isMatched" $ do
-              ((nextState, _), _) <- runWithMocks $ update flush currentState $ HandleKeyInput SDL.KeycodeF
-              nextState `shouldBe` currentState {stateMode = ModeHints defaultHintModeData {stateKeySequence = "DEF", stateIsMatched = True}}
-
-            it "continues with MoveMousePosition action at center of matched cell" $ do
-              ((_, action), _) <- runWithMocks $ do
-                Mock_windowSize `mockReturns` mockWindowSize
-                Mock_windowPosition `mockReturns` mockWindowPosition
-                update flush currentState $ HandleKeyInput SDL.KeycodeF
-              action `shouldBe` Just (MoveMousePosition (1640, 370))
 
     context "with action MoveMouseInDirection" $ do
       let currentState = defaultState
@@ -264,7 +339,7 @@ test = do
           stateIsModeInitialized nextState `shouldBe` True
           action `shouldBe` Nothing
 
-        it "returns grid with 16x9 key sequences" $ do
+        it "returns grid of key sequences with the right number of rows and columns" $ do
           ((nextState, _), _) <- runWithMocks $ update flush currentState InitializeMode
           case stateMode nextState of
             ModeHints hintsData -> do
@@ -277,7 +352,7 @@ test = do
           ((nextState, _), _) <- runWithMocks $ update flush currentState InitializeMode
           case stateMode nextState of
             ModeHints hintsData -> do
-              join (stateGrid hintsData) `shouldSatisfy` (not . null)
+              join (stateGrid hintsData) `shouldSatisfy` isNotEmpty
               join (stateGrid hintsData) `shouldBe` uniq (join $ stateGrid hintsData)
             _ -> undefined
 

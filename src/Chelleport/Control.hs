@@ -72,7 +72,7 @@ keyModifier :: SDL.KeyboardEventData -> SDL.KeyModifier
 keyModifier = SDL.keysymModifier . SDL.keyboardEventKeysym
 
 checkKey :: [SDL.KeyboardEventData -> Bool] -> SDL.KeyboardEventData -> Bool
-checkKey = (<&&>)
+checkKey = foldl (<&&>) (const True)
 
 pressed :: SDL.KeyboardEventData -> Bool
 pressed = (SDL.Pressed ==) . SDL.keyboardEventKeyMotion
