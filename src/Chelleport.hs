@@ -24,7 +24,7 @@ run config = do
     runAppWithCtx :: (MonadIO m) => DrawContext -> AppM m x -> m x
     runAppWithCtx ctx = (`runReaderT` ctx) . runAppM
 
--- TODO: Make event handling independent of state
+-- TODO: Make event handling independent of state?
 eventHandler :: State -> SDL.Event -> Maybe AppAction
 eventHandler state event =
   case SDL.eventPayload event of

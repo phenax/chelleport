@@ -27,13 +27,16 @@ getSearchText state (ModeSearchData {searchInputText, searchFilteredWords, searc
 renderSearchView :: (MonadDraw m) => State -> ModeSearchData -> m ()
 renderSearchView state searchData@(ModeSearchData {searchFilteredWords, searchHighlightedIndex}) = do
   renderGridLines state
+  mapM_ highlightWord $ zip [0 ..] searchFilteredWords
+  drawSearchText
+  where
+    highlightWord (index, OCRMatch {matchStartX, matchStartY, matchEndX, matchEndY}) = do
+      setDrawColor $ if searchHighlightedIndex == index then colorAccent else colorLightGray
+      fillRectVertices (matchStartX, matchStartY) (matchEndX, matchEndY)
 
-  forM_ (zip [0 ..] searchFilteredWords) $ \(index, OCRMatch {matchStartX, matchStartY, matchEndX, matchEndY}) -> do
-    setDrawColor $ if searchHighlightedIndex == index then colorAccent else colorLightGray
-    fillRectVertices (matchStartX, matchStartY) (matchEndX, matchEndY)
-
-  (w, h) <- windowSize
-  void $ drawText (w `div` 2, 5 + h `div` 2) searchingTextStyle (Text.pack $ getSearchText state searchData)
+    drawSearchText = do
+      (w, h) <- windowSize
+      void $ drawText (w `div` 2, 5 + h `div` 2) searchingTextStyle (Text.pack $ getSearchText state searchData)
 
 renderHintsView :: (MonadDraw m) => State -> ModeHintsData -> m ()
 renderHintsView state (ModeHintsData {stateGrid, stateKeySequence, stateIsMatched}) = do

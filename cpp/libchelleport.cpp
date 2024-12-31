@@ -24,6 +24,7 @@ extern "C" OCRMatch *findWordCoordinates(const char *image_path, int *size) {
 
 OCRMatchSet extractTextMatches(const char *imagePath) {
   Pix *image = image::loadImage(imagePath);
+
   if (image == nullptr) {
     return OCRMatchSet();
   }
@@ -35,17 +36,17 @@ OCRMatchSet extractTextMatches(const char *imagePath) {
   int height = pixGetHeight(image);
 
   std::vector<std::unique_ptr<Recognizer>> recognizers;
-  recognizers.push_back(
-      std::make_unique<Recognizer>(0, 0, width / 2, height / 2));
 
+  // clang-format off
   recognizers.push_back(
-      std::make_unique<Recognizer>(width / 2, 0, width / 2, height / 2));
-
+    std::make_unique<Recognizer>("top-left",      0,          0,           width / 2,  height / 2));
   recognizers.push_back(
-      std::make_unique<Recognizer>(0, height / 2, width / 2, height / 2));
-
-  recognizers.push_back(std::make_unique<Recognizer>(width / 2, height / 2,
-                                                     width / 2, height / 2));
+    std::make_unique<Recognizer>("top-right",     width / 2,  0,           width / 2,  height / 2));
+  recognizers.push_back(
+    std::make_unique<Recognizer>("bottom-left",   0,          height / 2,  width / 2,  height / 2));
+  recognizers.push_back(
+    std::make_unique<Recognizer>("bottom-right",  width / 2,  height / 2,  width / 2,  height / 2));
+  // clang-format on
 
   return runRecognizers(recognizers, image);
 }
@@ -59,9 +60,10 @@ runRecognizers(std::vector<std::unique_ptr<Recognizer>> &recognizers,
   std::vector<std::thread> workers;
   workers.reserve(recognizers.size());
 
-  for (auto &ext : recognizers) {
-    workers.push_back(std::thread(
-        [&ext, &sharedImage]() { ext->recognize(sharedImage.get()); }));
+  for (auto &recognizer : recognizers) {
+    workers.push_back(std::thread([&recognizer, &sharedImage]() {
+      MEASURE(recognizer->id, { recognizer->recognize(sharedImage.get()); })
+    }));
   }
 
   for (std::thread &t : workers) {
@@ -69,8 +71,8 @@ runRecognizers(std::vector<std::unique_ptr<Recognizer>> &recognizers,
       t.join();
   }
 
-  for (auto &ext : recognizers) {
-    for (auto &match : ext->getResults())
+  for (auto &recognizer : recognizers) {
+    for (auto &match : recognizer->getResults())
       results.insert(match);
   }
 

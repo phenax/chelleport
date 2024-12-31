@@ -55,7 +55,7 @@ Use [sxhkd](https://github.com/baskerville/sxhkd), [shotkey](https://github.com/
 - Once a match is found, you can now use `hjkl` keys to make smaller movements. Hold `shift` + `hjkl` to move in bigger increments.
 - Press `space` to click
 
-### Search mode (`ctrl+s` to switch to search mode)
+### Search mode (`ctrl+s` to switch to search mode or run with `chelleport -m search`)
 - Words that are recognized by OCR will be highlighted
 - Type the characters in one of the words to move the cursor to it
 - Press `ctrl+n` & `ctrl+p` to go to next/previous match respectively

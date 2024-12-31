@@ -23,8 +23,10 @@ class Recognizer {
   bool failed = false;
 
 public:
-  Recognizer(int x, int y, int width, int height)
-      : x(x), y(y), width(width), height(height) {
+  const char *id;
+
+  Recognizer(const char *id, int x, int y, int width, int height)
+      : id(id), x(x), y(y), width(width), height(height) {
     initializeTesseract();
   }
 
