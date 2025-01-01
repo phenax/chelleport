@@ -11,7 +11,7 @@ Control your mouse pointer entirely with your keyboard.
 
 ---
 
-https://github.com/user-attachments/assets/93ddc1ff-6cbe-4be4-9507-d68de880212a
+https://github.com/user-attachments/assets/2f095f9c-d75e-468d-83f1-32f4b637b63d
 
 ---
 
